@@ -1,0 +1,10 @@
+[package]
+name = "extractor"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+uiua = { path = "../../uiua" }
+
+[profile.dev]
+opt-level = 1
