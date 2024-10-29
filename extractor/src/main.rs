@@ -156,23 +156,17 @@ fn handle_ast_items(items: Vec<Item>, asm: &Assembly) -> Vec<Value> {
             }
             Item::Data(data_def) => {
                 let mut output = Map::new();
-                
+
                 let data_def_name = data_def.name.clone();
                 output.insert("name".to_string(), data_def_name.map_or(Value::Null, |name| Value::String(name.value.to_string())));
 
+
                 if data_def.variant {
-                    let info = match get_binding_info(asm, &data_def.name.unwrap().span) {
-                        Some(info) => info,
-                        None => continue,
-                    };
-
-                    println!("{:?}", info);
-
                     output.insert("type".to_string(), Value::String("variant".to_string()));
                 } else {
                     output.insert("type".to_string(), Value::String("data".to_string()));
                 }
-
+                
                 if let Some(def) = data_def.fields {
                     let fields: Vec<Value> = def.fields.iter().map(|field| {
                         let mut field_obj = Map::new();
@@ -191,7 +185,12 @@ fn handle_ast_items(items: Vec<Item>, asm: &Assembly) -> Vec<Value> {
 
                 results.push(Value::Object(output));
             }
-            _ => {}
+            Item::Import(import) => {
+                let mut output = Map::new();
+                output.insert("type".to_string(), Value::String("import".to_string()));
+                output.insert("path".to_string(), Value::String(import.path.value.to_string()));
+                results.push(Value::Object(output));
+            }
         }
     }
 
@@ -229,6 +228,9 @@ fn main() {
     
     for (file_path, file_content) in files {
         let mut output_file = Map::new();
+        if file_path.starts_with("uiua-modules") {
+            continue;
+        }
 
         let full_file_path = canonicalize(&file_path).unwrap();
         let src = InputSrc::File(file_path.clone().into());
