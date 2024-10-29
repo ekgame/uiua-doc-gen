@@ -1,11 +1,13 @@
-# !doc
-# # Hello world
-# I'm a doc!
+# Experimental!
 
-# Constant doc
-# outoput ? input:number
-C ← +@a⇡26
+~MyData {
+  Foo: °0type
+  Bar: °1type
+}
 
-# Function doc
-# output ? input:number
-F ← + 1
+┌─╴MyData₂
+  ~{Foo Bar}
+  |Foo {Foo Bar}
+  |Bar [r g b]
+  |Baz
+└─╴

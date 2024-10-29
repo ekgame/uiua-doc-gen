@@ -56,7 +56,7 @@ fn format_signature(signature: Signature) -> Value {
     Value::Object(output)
 }
 
-fn get_words_as_code(words: &Vec<Vec<Sp<Word>>>, asm: &Assembly) -> String {
+fn get_words_as_code_2(words: &Vec<Vec<Sp<Word>>>, asm: &Assembly) -> String {
     if words.first().unwrap().is_empty() {
         return "".to_string();
     }
@@ -71,13 +71,24 @@ fn get_words_as_code(words: &Vec<Vec<Sp<Word>>>, asm: &Assembly) -> String {
     span.as_str(&asm.inputs, |code| code.to_owned())
 }
 
+fn get_words_as_code(words: &Vec<Sp<Word>>, asm: &Assembly) -> String {
+    if words.is_empty() {
+        return "".to_string();
+    }
+
+    let from = &words.first().unwrap().span;
+    let to = &words.last().unwrap().span;
+    let span = from.clone().merge(to.clone());
+    span.as_str(&asm.inputs, |code| code.to_owned())
+}
+
 fn handle_ast_items(items: Vec<Item>, asm: &Assembly) -> Vec<Value> {
     let mut results = Vec::new();
 
     for item in items {
         match item {
             Item::Words(words) => {
-                let code_str = get_words_as_code(&words, asm).replace("\r\n", "\n");
+                let code_str = get_words_as_code_2(&words, asm).replace("\r\n", "\n");
                 let code = code_str.split("\n\n");
 
                 for chunk in code {
@@ -142,6 +153,43 @@ fn handle_ast_items(items: Vec<Item>, asm: &Assembly) -> Vec<Value> {
 
                     results.push(Value::Object(output));
                 }
+            }
+            Item::Data(data_def) => {
+                let mut output = Map::new();
+                
+                let data_def_name = data_def.name.clone();
+                output.insert("name".to_string(), data_def_name.map_or(Value::Null, |name| Value::String(name.value.to_string())));
+
+                if data_def.variant {
+                    let info = match get_binding_info(asm, &data_def.name.unwrap().span) {
+                        Some(info) => info,
+                        None => continue,
+                    };
+
+                    println!("{:?}", info);
+
+                    output.insert("type".to_string(), Value::String("variant".to_string()));
+                } else {
+                    output.insert("type".to_string(), Value::String("data".to_string()));
+                }
+
+                if let Some(def) = data_def.fields {
+                    let fields: Vec<Value> = def.fields.iter().map(|field| {
+                        let mut field_obj = Map::new();
+                        field_obj.insert("name".to_string(), Value::String(field.name.value.to_string()));
+                        field_obj.insert("validator".to_string(), field.validator.as_ref().map_or(Value::Null, |v| Value::String(get_words_as_code(&v.words, asm))));
+                        Value::Object(field_obj)
+                    }).collect();
+
+                    let mut definition = Map::new();
+                    definition.insert("boxed".to_string(), Value::Bool(def.boxed));
+                    definition.insert("fields".to_string(), Value::Array(fields));
+                    output.insert("definition".to_string(), Value::Object(definition));
+                } else {
+                    output.insert("definition".to_string(), Value::Null);
+                }
+
+                results.push(Value::Object(output));
             }
             _ => {}
         }
