@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 uiua = { path = "../../uiua" }
+serde_json = "1.0.1"
 
 [profile.dev]
 opt-level = 1

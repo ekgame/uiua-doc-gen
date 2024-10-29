@@ -2,10 +2,10 @@
 # # Hello world
 # I'm a doc!
 
-~ "./mod.ua" ~ Test
-
 # Constant doc
-C = 1
+# outoput ? input:number
+C ← +@a⇡26
 
 # Function doc
-F = + 1
+# output ? input:number
+F ← + 1
