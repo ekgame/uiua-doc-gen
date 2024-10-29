@@ -16,6 +16,7 @@ use uiua::DocCommentSig;
 use uiua::NativeSys;
 use uiua::Signature;
 use uiua::Sp;
+use uiua::SysBackend;
 use uiua::{parse, InputSrc};
 
 fn get_binding_info(asm: &Assembly, span: &CodeSpan) -> Option<BindingInfo> {
@@ -217,7 +218,10 @@ fn main() {
         std::process::exit(1);
     }
 
-    let mut comp = Compiler::with_backend(NativeSys::default());
+    let backend = NativeSys::default();
+    let _ = backend.change_directory(path.to_str().unwrap());
+
+    let mut comp = Compiler::with_backend(backend);
     let asm = comp.load_file(lib_path).unwrap().finish();
 
     let mut inputs = asm.inputs.clone();
