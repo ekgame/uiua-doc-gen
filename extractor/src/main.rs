@@ -5,6 +5,7 @@ use std::path::Path;
 use serde_json::Map;
 use serde_json::Value;
 use uiua::ast::Item;
+use uiua::ast::ModuleKind;
 use uiua::ast::Word;
 use uiua::Assembly;
 use uiua::BindingInfo;
@@ -25,7 +26,7 @@ fn get_binding_info(asm: &Assembly, span: &CodeSpan) -> Option<BindingInfo> {
         return Some(binding.clone());
     }
 
-    panic!("Binding not found for span {:?}", span);
+    None
 }
 
 fn signature_comment_to_object(doc: DocCommentSig) -> Value {
@@ -60,6 +61,10 @@ fn get_words_as_code(words: &Vec<Vec<Sp<Word>>>, asm: &Assembly) -> String {
         return "".to_string();
     }
 
+    if words.last().unwrap().is_empty() {
+        return "".to_string();
+    }
+
     let from = &words.first().unwrap().first().unwrap().span;
     let to = &words.last().unwrap().last().unwrap().span;
     let span = from.clone().merge(to.clone());
@@ -85,7 +90,10 @@ fn handle_ast_items(items: Vec<Item>, asm: &Assembly) -> Vec<Value> {
             Item::Binding(binding) => {
                 let mut output = Map::new();
 
-                let info = get_binding_info(asm, &binding.name.span).unwrap();
+                let info = match get_binding_info(asm, &binding.name.span) {
+                    Some(info) => info,
+                    None => continue,
+                };
                 let code = binding.span().as_str(&asm.inputs, |code| code.to_owned());
                 let comment = info.comment.clone().map_or(Value::Null, |comment| Value::String(comment.text.to_string()));
                 let signature = info.comment.and_then(|comment| comment.sig);
@@ -110,6 +118,30 @@ fn handle_ast_items(items: Vec<Item>, asm: &Assembly) -> Vec<Value> {
                 }
 
                 results.push(Value::Object(output));
+            }
+            Item::Module(module) => {
+                if let ModuleKind::Test = module.value.kind {
+                    // We do not document tests
+                    continue
+                }
+                else if let ModuleKind::Named(name) = module.value.kind {
+                    let info = match get_binding_info(asm, &name.span) {
+                        Some(info) => info,
+                        None => continue,
+                    };
+
+                    let comment = info.comment.clone().map_or(Value::Null, |comment| Value::String(comment.text.to_string()));
+
+                    let mut output = Map::new();
+                    output.insert("type".to_string(), Value::String("module".to_string()));
+                    output.insert("name".to_string(), Value::String(name.value.to_string()));
+                    output.insert("comment".to_string(), comment);
+                    
+                    let processed_items = handle_ast_items(module.value.items, asm);
+                    output.insert("items".to_string(), Value::Array(processed_items));
+
+                    results.push(Value::Object(output));
+                }
             }
             _ => {}
         }
