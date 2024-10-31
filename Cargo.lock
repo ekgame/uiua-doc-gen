@@ -2719,6 +2719,7 @@ name = "uiua-docs-generator"
 version = "0.13.0"
 dependencies = [
  "clap",
+ "same-file",
  "thiserror",
  "uiua",
 ]

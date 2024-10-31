@@ -17,6 +17,7 @@ use uiua::Signature;
 use uiua::Sp;
 use uiua::SysBackend;
 use uiua::{parse, InputSrc};
+use same_file::is_same_file;
 
 #[derive(Debug)]
 pub struct SignatureInfo {
@@ -86,8 +87,9 @@ pub enum BindingType {
 
 #[derive(Debug)]
 pub struct FileContent {
-    file: String,
-    items: Vec<ItemContent>,
+    pub main: bool,
+    pub file: String,
+    pub items: Vec<ItemContent>,
 }
 
 fn signature_comment_to_struct(doc: DocCommentSig) -> NamedSignature {
@@ -250,9 +252,12 @@ fn handle_ast_items(items: Vec<Item>, asm: &Assembly) -> Vec<ItemContent> {
 pub enum ExtractError {
     #[error("Library file not found: {0}")]
     LibraryNotFound(PathBuf),
-    
+
     #[error("Failed to parse file: {0}")]
     ParseError(PathBuf, Sp<ParseError>),
+    
+    #[error("IO error: {0}")]
+    IoError(#[from] std::io::Error),
 }
 
 pub fn extract_uiua_definitions(path: &PathBuf) -> Result<Vec<FileContent>, ExtractError> {
@@ -265,7 +270,7 @@ pub fn extract_uiua_definitions(path: &PathBuf) -> Result<Vec<FileContent>, Extr
     let _ = backend.change_directory(path.to_str().unwrap());
 
     let mut comp = Compiler::with_backend(backend);
-    let asm = comp.load_file(lib_path).unwrap().finish();
+    let asm = comp.load_file(lib_path.clone()).unwrap().finish();
 
     let mut inputs = asm.inputs.clone();
     let files: Vec<_> = inputs.files.iter()
@@ -287,6 +292,7 @@ pub fn extract_uiua_definitions(path: &PathBuf) -> Result<Vec<FileContent>, Extr
         }
 
         let file_content = FileContent {
+            main: is_same_file(&full_file_path, &lib_path)?,
             file: full_file_path.to_string_lossy().into_owned(),
             items: handle_ast_items(items, &asm),
         };

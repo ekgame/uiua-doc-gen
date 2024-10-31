@@ -7,6 +7,7 @@ edition = "2021"
 uiua = { path = "../uiua" }
 clap = "4.5.20"
 thiserror = "1.0.65"
+same-file = "1.0.6"
 
 [profile.dev]
 opt-level = 1
