@@ -1,12 +1,12 @@
 # Experimental!
 
+~ "git: github.com/ekgame/uiua-essentials" ~ Trim
+
 # !doc
 # # Hello word
 # This is a test file for the extractor.
 # It contains a bunch of different comments and annotations.
 # It's used to test the extractor and the parser.
-
-~ "git: github.com/ekgame/uiua-essentials" ~ Trim
 
 # This is a function comment.
 # It's multiple lines long.
