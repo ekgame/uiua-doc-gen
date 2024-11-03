@@ -1,12 +1,14 @@
 mod extractor;
 mod generator;
+mod summarizer;
 
-use clap::{Parser, Subcommand};
+use clap::Parser;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
 use thiserror::Error;
 use extractor::extract_uiua_definitions;
+use crate::summarizer::summarize_content;
 
 #[derive(Error, Debug)]
 enum AppError {
@@ -95,7 +97,8 @@ fn main() {
         }
     };
 
-    let result = generator::generate_documentation_site(&working_dir, main_file);
+    let summary = summarize_content(main_file);
+    let result = generator::generate_documentation_site(&working_dir, summary);
     if let Err(err) = result {
         eprintln!("Error: {}", err);
         std::process::exit(1);
