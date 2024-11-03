@@ -3,12 +3,12 @@ use std::path::PathBuf;
 use kuchiki::traits::TendrilSink;
 use leptos::{view, CollectView, IntoView};
 use thiserror::Error;
-use crate::summarizer::DocumentationSection;
+use crate::summarizer::{DocumentationSection, DocumentationSummary, RenderingContent, RenderingItem};
 
 #[derive(Error, Debug)]
 pub enum GenerationError {}
 
-pub fn generate_documentation_site(directory: &PathBuf, summary: Vec<DocumentationSection>) -> Result<(), GenerationError> {
+pub fn generate_documentation_site(directory: &PathBuf, summary: DocumentationSummary) -> Result<(), GenerationError> {
     let output_directory = directory.join("doc-site");
     remove_dir(output_directory.clone()).unwrap_or(());
     create_dir_all(output_directory.clone()).expect("Unable to create output directory");
@@ -18,11 +18,6 @@ pub fn generate_documentation_site(directory: &PathBuf, summary: Vec<Documentati
     save_static_file(&output_directory, "Uiua386.ttf", include_bytes!("../design/Uiua386.ttf"));
     save_static_file(&output_directory, "index.html", generate_html(summary).as_bytes());
 
-    // extract_doc_comments(&file.items).iter()
-    //     .for_each(|comment| {
-    //         println!("{}", comment);
-    //     });
-
     Ok(())
 }
 
@@ -31,7 +26,7 @@ fn save_static_file(output_directory: &PathBuf, file: &str, content: &[u8]) {
     std::fs::write(destination, content).expect("Unable to write static file");
 }
 
-fn generate_html(summary: Vec<DocumentationSection>) -> String {
+fn generate_html(summary: DocumentationSummary) -> String {
     let raw_output = leptos::ssr::render_to_string(|| generate_page(summary)).to_string();
     let document = kuchiki::parse_html().from_utf8().one(raw_output.as_bytes());
 
@@ -57,7 +52,7 @@ fn generate_html(summary: Vec<DocumentationSection>) -> String {
     String::from_utf8(result).unwrap()
 }
 
-fn generate_page(summary: Vec<DocumentationSection>) -> impl IntoView {
+fn generate_page(summary: DocumentationSummary) -> impl IntoView {
     view! {
         <!DOCTYPE html>
         <html lang="en">
@@ -76,14 +71,17 @@ fn generate_page(summary: Vec<DocumentationSection>) -> impl IntoView {
                             <div class="line"></div>
                             <div class="line"></div>
                         </div>
-                        <h1>"uiua-essentials"</h1>
+                        <h1>{summary.title.clone()}</h1>
                     </div>
                     <div class="container">
                         <div class="sidebar">
                             {generate_sidebar(&summary)}
                         </div>
                         <div class="content">
-                            TODO
+                            <div class="content-wrapper">
+                                <h1 class="mobile-hidden">{&summary.title}</h1>
+                                {generate_content(&summary)}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -92,9 +90,9 @@ fn generate_page(summary: Vec<DocumentationSection>) -> impl IntoView {
     }
 }
 
-fn generate_sidebar(summary: &Vec<DocumentationSection>) -> impl IntoView {
+fn generate_sidebar(summary: &DocumentationSummary) -> impl IntoView {
     view! {
-        {summary.iter()
+        {summary.sections.iter()
             .map(|section| view! {
                 <div class="sidebar-section">
                     <div class="section-name">{&section.title}</div>
@@ -111,5 +109,34 @@ fn generate_sidebar(summary: &Vec<DocumentationSection>) -> impl IntoView {
             })
             .collect_view()
         }
+    }
+}
+
+fn generate_content(summary: &DocumentationSummary) -> impl IntoView {
+    view! {
+        {summary.sections.iter()
+            .map(|section| view! {
+                {section.content.iter()
+                    .map(|item| generate_item(item))
+                    .collect_view()
+                }
+            })
+            .collect_view()
+        }
+    }
+}
+
+fn generate_item(item: &RenderingItem) -> impl IntoView {
+    view! {
+        {match item.content {
+            RenderingContent::RenderedDocumentation(ref content) => view! {
+                <div class="panel" inner_html={content}></div>
+            },
+            RenderingContent::Item(ref item) => view! {
+                <div class="panel">
+                    "TODO"
+                </div>
+            },
+        }}
     }
 }

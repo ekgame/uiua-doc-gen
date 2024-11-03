@@ -7,7 +7,7 @@ use kuchiki::{Attribute, ElementData, ExpandedName, NodeRef};
 use uiua::LocalName;
 use crate::extractor::{FileContent, ItemContent};
 
-enum RenderingContent {
+pub enum RenderingContent {
     RenderedDocumentation(String),
     Item(ItemContent),
 }
@@ -27,14 +27,22 @@ pub struct DocumentationSection {
     pub content: Vec<RenderingItem>,
 }
 
-pub fn summarize_content(content: &FileContent) -> Vec<DocumentationSection> {
+pub struct DocumentationSummary {
+    pub title: String,
+    pub sections: Vec<DocumentationSection>,
+}
+
+pub fn summarize_content(content: &FileContent, title: String) -> DocumentationSummary {
     let mut sections = Vec::new();
 
     if let Some(documentation) = summarize_doc_comments(content) {
         sections.push(documentation);
     }
 
-    sections
+    DocumentationSummary {
+        title: title.clone(),
+        sections,
+    }
 }
 
 fn summarize_doc_comments(content: &FileContent) -> Option<DocumentationSection> {

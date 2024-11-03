@@ -30,6 +30,9 @@ enum AppError {
 struct Cli {
     #[arg(short, long)]
     dir: Option<PathBuf>,
+    
+    #[arg(short, long)]
+    name: String,
 }
 
 fn validate_directory(dir: Option<PathBuf>) -> Result<PathBuf, AppError> {
@@ -97,7 +100,7 @@ fn main() {
         }
     };
 
-    let summary = summarize_content(main_file);
+    let summary = summarize_content(main_file, cli.name);
     let result = generator::generate_documentation_site(&working_dir, summary);
     if let Err(err) = result {
         eprintln!("Error: {}", err);
