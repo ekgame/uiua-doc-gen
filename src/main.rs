@@ -1,4 +1,5 @@
 mod extractor;
+mod generator;
 
 use clap::{Parser, Subcommand};
 use std::env;
@@ -25,19 +26,8 @@ enum AppError {
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
-    #[command(subcommand)]
-    command: Commands,
-    
     #[arg(short, long)]
     dir: Option<PathBuf>,
-}
-
-#[derive(Subcommand)]
-enum Commands {
-    /// Generate static site
-    Build,
-    /// Run development server
-    Serve,
 }
 
 fn validate_directory(dir: Option<PathBuf>) -> Result<PathBuf, AppError> {
@@ -87,21 +77,29 @@ fn main() {
         }
     };
 
-    match cli.command {
-        Commands::Build => {
-            let output = match extract_uiua_definitions(&working_dir) {
-                Ok(output) => output,
-                Err(err) => {
-                    eprintln!("Error: {}", err);
-                    std::process::exit(1);
-                }
-            };
+    let extracted = match extract_uiua_definitions(&working_dir) {
+        Ok(extracted) => extracted,
+        Err(err) => {
+            eprintln!("Error: {}", err);
+            std::process::exit(1);
+        }
+    };
 
-            println!("TODO: Generate site in {:?}", working_dir);
-            println!("{:#?}", output);
+    // TODO: handle more than one file
+    let maybe_main_file = extracted.iter().find(|item| item.main);
+    let main_file = match maybe_main_file {
+        Some(main_file) => main_file,
+        None => {
+            eprintln!("No main file found");
+            std::process::exit(1);
         }
-        Commands::Serve => {
-            println!("TODO: Serve site");
-        }
+    };
+
+    let result = generator::generate_documentation_site(&working_dir, main_file);
+    if let Err(err) = result {
+        eprintln!("Error: {}", err);
+        std::process::exit(1);
     }
+
+    // println!("Generated the documentation.")
 }

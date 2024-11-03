@@ -45,7 +45,9 @@ pub struct Definition {
 
 #[derive(Debug)]
 pub enum ItemContent {
-    Words { code: String },
+    Words {
+        code: String
+    },
 
     Binding {
         name: String,
