@@ -44,38 +44,49 @@ pub struct Definition {
 }
 
 #[derive(Debug)]
+pub struct BindingDefinition {
+    pub name: String,
+    pub code: String,
+    pub public: bool,
+    pub comment: Option<String>,
+    pub kind: BindingType,
+}
+
+#[derive(Debug)]
+pub struct ModuleDefinition {
+    pub name: String,
+    pub comment: Option<String>,
+    pub items: Vec<ItemContent>,
+}
+
+#[derive(Debug)]
+pub struct DataDefinition {
+    pub name: Option<String>,
+    pub definition: Option<Definition>,
+}
+
+#[derive(Debug)]
+pub struct VariantDefinition {
+    pub name: String,
+    pub definition: Option<Definition>,
+}
+
+#[derive(Debug)]
+pub struct ImportDefinition {
+    path: String,
+}
+
+#[derive(Debug)]
 pub enum ItemContent {
     Words {
         code: String
     },
 
-    Binding {
-        name: String,
-        code: String,
-        public: bool,
-        comment: Option<String>,
-        kind: BindingType,
-    },
-
-    Module {
-        name: String,
-        comment: Option<String>,
-        items: Vec<ItemContent>,
-    },
-
-    Data {
-        name: Option<String>,
-        definition: Option<Definition>,
-    },
-
-    Variant {
-        name: Option<String>,
-        definition: Option<Definition>,
-    },
-
-    Import {
-        path: String,
-    },
+    Binding(BindingDefinition),
+    Module(ModuleDefinition),
+    Data(DataDefinition),
+    Variant(VariantDefinition),
+    Import(ImportDefinition),
 }
 
 #[derive(Debug)]
@@ -185,13 +196,13 @@ fn handle_ast_items(items: Vec<Item>, asm: &Assembly) -> Vec<ItemContent> {
                     _ => continue,
                 };
 
-                results.push(ItemContent::Binding {
+                results.push(ItemContent::Binding( BindingDefinition {
                     name: binding.name.value.to_string(),
                     code,
                     public: info.public,
                     comment,
                     kind,
-                });
+                }));
             }
             Item::Module(module) => {
                 if let ModuleKind::Test = module.value.kind {
@@ -206,11 +217,11 @@ fn handle_ast_items(items: Vec<Item>, asm: &Assembly) -> Vec<ItemContent> {
                     let comment = info.comment.map(|comment| comment.text.to_string());
                     let processed_items = handle_ast_items(module.value.items, asm);
 
-                    results.push(ItemContent::Module {
+                    results.push(ItemContent::Module(ModuleDefinition {
                         name: name.value.to_string(),
                         comment,
                         items: processed_items,
-                    });
+                    }));
                 }
             }
             Item::Data(data_def) => {
@@ -226,23 +237,23 @@ fn handle_ast_items(items: Vec<Item>, asm: &Assembly) -> Vec<ItemContent> {
                 });
 
                 let item_content = if data_def.variant {
-                    ItemContent::Variant {
-                        name: data_def.name.map(|name| name.value.to_string()),
+                    ItemContent::Variant(VariantDefinition {
+                        name: data_def.name.map(|name| name.value.to_string()).unwrap(),
                         definition,
-                    }
+                    })
                 } else {
-                    ItemContent::Data {
+                    ItemContent::Data(DataDefinition {
                         name: data_def.name.map(|name| name.value.to_string()),
                         definition,
-                    }
+                    })
                 };
 
                 results.push(item_content);
             }
             Item::Import(import) => {
-                results.push(ItemContent::Import {
+                results.push(ItemContent::Import(ImportDefinition {
                     path: import.path.value.to_string(),
-                });
+                }));
             }
         }
     }

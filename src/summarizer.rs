@@ -1,10 +1,7 @@
-use html5ever::serialize::{HtmlSerializer, SerializeOpts, TraversalScope};
-use html5ever::serialize::TraversalScope::IncludeNode;
 use markup5ever::namespace_url;
 use markup5ever::{local_name, ns, QualName};
-use kuchiki::traits::{TendrilSink};
-use kuchiki::{Attribute, ElementData, ExpandedName, NodeRef};
-use uiua::LocalName;
+use kuchiki::traits::TendrilSink;
+use kuchiki::NodeRef;
 use crate::extractor::{FileContent, ItemContent};
 
 pub enum RenderingContent {
@@ -72,8 +69,10 @@ fn summarize_doc_comment(comment: &String) -> RenderingItem {
         &markdown::Options::gfm()
     ).expect("Unable to convert markdown to HTML");
 
-    let mut document = kuchiki::parse_html().from_utf8().one(html.as_bytes());
+    let document = kuchiki::parse_html().from_utf8().one(html.as_bytes());
     document.select("h1, h2, h3, h4, h5, h6").unwrap()
+        .collect::<Vec<_>>()
+        .into_iter()
         .for_each(|element| {
             // h1 -> h2, h2 -> h3, etc.
             let current_level = element.name.local.to_string();
@@ -85,14 +84,14 @@ fn summarize_doc_comment(comment: &String) -> RenderingItem {
                 _ => local_name!("h6"),
             };
 
-            let mut new_header = NodeRef::new_element(
+            let new_header = NodeRef::new_element(
                 QualName::new(None, ns!(html), new_level.clone()),
                 None,
             );
 
             new_header.append(NodeRef::new_text(element.text_contents()));
 
-            if new_header.as_element().unwrap().name.local.to_string() == "h2" {
+            if new_level.to_string() == "h2" {
                 let title = element.text_contents();
                 let id = title.to_lowercase().replace(" ", "-");
                 new_header.as_element().unwrap().attributes.borrow_mut().insert("id", id.clone().into());

@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use kuchiki::traits::TendrilSink;
 use leptos::{view, CollectView, IntoView};
 use thiserror::Error;
-use crate::summarizer::{DocumentationSection, DocumentationSummary, RenderingContent, RenderingItem};
+use crate::summarizer::{DocumentationSummary, RenderingContent, RenderingItem};
 
 #[derive(Error, Debug)]
 pub enum GenerationError {}
@@ -127,16 +127,12 @@ fn generate_content(summary: &DocumentationSummary) -> impl IntoView {
 }
 
 fn generate_item(item: &RenderingItem) -> impl IntoView {
-    view! {
-        {match item.content {
-            RenderingContent::RenderedDocumentation(ref content) => view! {
-                <div class="panel" inner_html={content}></div>
-            },
-            RenderingContent::Item(ref item) => view! {
-                <div class="panel">
-                    "TODO"
-                </div>
-            },
-        }}
+    match &item.content {
+        RenderingContent::RenderedDocumentation(ref content) => view! {
+            <div class="panel" inner_html={content}></div>
+        },
+        RenderingContent::Item(item) => match item {
+            _ => view! { <div class="panel">"Unsupported item"</div> }
+        },
     }
 }
