@@ -1,29 +1,47 @@
+use std::option::Option;
 use markup5ever::namespace_url;
 use markup5ever::{local_name, ns, QualName};
 use kuchiki::traits::TendrilSink;
 use kuchiki::NodeRef;
-use crate::extractor::{FileContent, ItemContent};
+use crate::extractor::{BindingType, FileContent, ItemContent};
 
-pub enum RenderingContent {
-    RenderedDocumentation(String),
-    Item(ItemContent),
+#[derive(Debug, Clone)]
+pub struct Title {
+    pub title: String,
+    pub link_id: String,
 }
 
+#[derive(Debug, Clone)]
+pub struct ContentItems {
+    pub title: Title,
+    pub items: Vec<ItemContent>,
+}
+
+#[derive(Debug, Clone)]
+pub enum RenderingContent {
+    RenderedDocumentation(String),
+    Items(ContentItems),
+}
+
+#[derive(Debug, Clone)]
 pub struct ItemLink {
     pub title: String,
     pub url: String,
 }
 
+#[derive(Debug, Clone)]
 pub struct RenderingItem {
     pub links: Vec<ItemLink>,
     pub content: RenderingContent,
 }
 
+#[derive(Debug, Clone)]
 pub struct DocumentationSection {
     pub title: String,
     pub content: Vec<RenderingItem>,
 }
 
+#[derive(Debug, Clone)]
 pub struct DocumentationSummary {
     pub title: String,
     pub sections: Vec<DocumentationSection>,
@@ -34,6 +52,13 @@ pub fn summarize_content(content: &FileContent, title: String) -> DocumentationS
 
     if let Some(documentation) = summarize_doc_comments(content) {
         sections.push(documentation);
+    }
+    
+    if let Some(constants) = summarize_constants(&content.items) {
+        sections.push(DocumentationSection {
+            title: "Constants".to_owned(),
+            content: vec![constants],
+        });
     }
 
     DocumentationSummary {
@@ -134,4 +159,30 @@ fn extract_doc_comments(items: &Vec<ItemContent>) -> Vec<String> {
         }
         None
     }).collect()
+}
+
+fn summarize_constants(items: &Vec<ItemContent>) -> Option<RenderingItem> {
+    let constants = items.iter().filter(|item| {
+        if let ItemContent::Binding(binding) = item {
+            if let BindingType::Const(_) = &binding.kind {
+                return true;
+            }
+        }
+        false
+    }).collect::<Vec<_>>();
+    
+    if constants.is_empty() {
+        return None;
+    }
+    
+    Some(RenderingItem {
+        links: vec![],
+        content: RenderingContent::Items(ContentItems {
+            title: Title {
+                title: "Constants".to_owned(),
+                link_id: "__constants".to_owned(),
+            },
+            items: constants.iter().map(|item| (*item).clone()).collect(),
+        }),
+    })
 }

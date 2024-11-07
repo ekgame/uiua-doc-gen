@@ -2,8 +2,10 @@ use std::fs::{create_dir_all, remove_dir};
 use std::path::PathBuf;
 use kuchiki::traits::TendrilSink;
 use leptos::{view, CollectView, IntoView};
+use leptos::html::Template;
 use thiserror::Error;
-use crate::summarizer::{DocumentationSummary, RenderingContent, RenderingItem};
+use crate::extractor::ItemContent;
+use crate::summarizer::{ContentItems, DocumentationSummary, RenderingContent, RenderingItem};
 
 #[derive(Error, Debug)]
 pub enum GenerationError {}
@@ -104,6 +106,18 @@ fn generate_sidebar(summary: &DocumentationSummary) -> impl IntoView {
                             })
                             .collect_view()
                         }
+                        {section.content.iter()
+                            .filter(|item| matches!(&item.content, RenderingContent::Items(_)))
+                            .map(|link| 
+                                match &link.content {
+                                    RenderingContent::Items(items) => view! {
+                                        <li><a href={format!("#{}", items.title.link_id.clone())}>{items.title.title.clone()}</a></li>
+                                    },
+                                    _ => view! { <li>"N/A"</li> }
+                                }
+                            )
+                            .collect_view()
+                        }
                     </ul>
                 </div>
             })
@@ -117,7 +131,7 @@ fn generate_content(summary: &DocumentationSummary) -> impl IntoView {
         {summary.sections.iter()
             .map(|section| view! {
                 {section.content.iter()
-                    .map(|item| generate_item(item))
+                    .map(|item| generate_rendering_item(item))
                     .collect_view()
                 }
             })
@@ -126,13 +140,29 @@ fn generate_content(summary: &DocumentationSummary) -> impl IntoView {
     }
 }
 
-fn generate_item(item: &RenderingItem) -> impl IntoView {
+fn generate_rendering_item(item: &RenderingItem) -> impl IntoView {
     match &item.content {
         RenderingContent::RenderedDocumentation(ref content) => view! {
-            <div class="panel" inner_html={content}></div>
+            <div>
+                <div class="panel" inner_html={content}></div>
+            </div>
         },
-        RenderingContent::Item(item) => match item {
-            _ => view! { <div class="panel">"Unsupported item"</div> }
+        RenderingContent::Items(ref item) => view! {
+            <div>
+                <h2 id={&item.title.link_id}>{&item.title.title}</h2>
+                {item.items.iter()
+                    .map(|item| generate_content_item(item))
+                    .collect_view()
+                }
+            </div>
         },
+    }
+}
+
+fn generate_content_item(item: &ItemContent) -> impl IntoView {
+    view! {
+        <div>
+            <div class="panel">"TODO"</div>
+        </div>
     }
 }

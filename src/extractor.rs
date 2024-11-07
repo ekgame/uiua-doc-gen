@@ -19,31 +19,31 @@ use uiua::SysBackend;
 use uiua::{parse, InputSrc};
 use same_file::is_same_file;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SignatureInfo {
     pub inputs: i32,
     pub outputs: i32,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct NamedSignature {
     pub inputs: Vec<String>,
     pub outputs: Vec<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Field {
     pub name: String,
     pub validator: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Definition {
     pub boxed: bool,
     pub fields: Vec<Field>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BindingDefinition {
     pub name: String,
     pub code: String,
@@ -52,31 +52,31 @@ pub struct BindingDefinition {
     pub kind: BindingType,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ModuleDefinition {
     pub name: String,
     pub comment: Option<String>,
     pub items: Vec<ItemContent>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DataDefinition {
     pub name: Option<String>,
     pub definition: Option<Definition>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct VariantDefinition {
     pub name: String,
     pub definition: Option<Definition>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ImportDefinition {
     path: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ItemContent {
     Words {
         code: String
@@ -89,13 +89,21 @@ pub enum ItemContent {
     Import(ImportDefinition),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+pub struct ConstantDefinition {
+    pub value: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct FunctionDefinition {
+    signature: SignatureInfo,
+    named_signature: Option<NamedSignature>,
+}
+
+#[derive(Debug, Clone)]
 pub enum BindingType {
-    Const { value: Option<String> },
-    Function {
-        signature: SignatureInfo,
-        named_signature: Option<NamedSignature>,
-    },
+    Const(ConstantDefinition),
+    Function(FunctionDefinition),
 }
 
 #[derive(Debug)]
@@ -186,13 +194,13 @@ fn handle_ast_items(items: Vec<Item>, asm: &Assembly) -> Vec<ItemContent> {
                 let signature = info.comment.and_then(|comment| comment.sig);
 
                 let kind = match info.kind {
-                    BindingKind::Const(value) => BindingType::Const {
+                    BindingKind::Const(value) => BindingType::Const( ConstantDefinition {
                         value: value.map(|v| v.to_string()),
-                    },
-                    BindingKind::Func(function) => BindingType::Function {
+                    }),
+                    BindingKind::Func(function) => BindingType::Function(FunctionDefinition {
                         signature: format_signature(function.signature),
                         named_signature: signature.map(signature_comment_to_struct),
-                    },
+                    }),
                     _ => continue,
                 };
 

@@ -121,3 +121,13 @@
 # 
 # Here's a line break using two spaces at the end  
 # And here's the next line
+
+# The constant containing all letters of the american alphabet in lower case.
+Alphabet      ← +@a⇡26
+
+# The constant containing all the arabic digits.
+Digits        ← +@0⇡10
+
+# The constant containing all uppercase and lowercase american alphabet characters
+# and the digits.
+Alphanumeric  ← ⊂⊂ Alphabet ⌵Alphabet Digits
