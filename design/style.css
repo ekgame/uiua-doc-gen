@@ -127,6 +127,18 @@ a {
     }
 }
 
+.feature-documentation {
+    margin-top: 1em;
+    
+    & > *:first-child {
+        margin-top: 0;
+    }
+
+    & > *:last-child {
+        margin-bottom: 0;
+    }
+}
+
 .sidebar ul {
     list-style-type: none;
     padding: 0;
@@ -148,7 +160,6 @@ a {
     padding: 1em;
     background-color: var(--color-separator);
     font-family: Uiua386, monospace;
-    margin-bottom: 1em;
     overflow: auto;
     white-space: pre;
 }

@@ -1,10 +1,10 @@
 use std::fs::{create_dir_all, remove_dir};
 use std::path::PathBuf;
 use kuchiki::traits::TendrilSink;
-use leptos::{view, CollectView, IntoView};
-use leptos::html::Template;
+use leptos::{component, view, CollectView, HtmlElement, IntoView};
+use leptos::html::{Div, Template};
 use thiserror::Error;
-use crate::extractor::ItemContent;
+use crate::extractor::{BindingDefinition, BindingType, ConstantDefinition, FunctionDefinition, ItemContent};
 use crate::summarizer::{ContentItems, DocumentationSummary, RenderingContent, RenderingItem};
 
 #[derive(Error, Debug)]
@@ -54,12 +54,19 @@ fn generate_html(summary: DocumentationSummary) -> String {
     String::from_utf8(result).unwrap()
 }
 
+fn markdown_to_html(markdown: &String) -> String {
+    markdown::to_html_with_options(
+        markdown.as_str(),
+        &markdown::Options::gfm()
+    ).expect("Unable to convert markdown to HTML")
+}
+
 fn generate_page(summary: DocumentationSummary) -> impl IntoView {
     view! {
         <!DOCTYPE html>
         <html lang="en">
             <head>
-                <title>"Hello world"</title>
+                <title>{summary.title.clone()}</title>
                 <meta charset="utf-8"/>
                 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
                 <link rel="stylesheet" href="style.css"/>
@@ -143,9 +150,7 @@ fn generate_content(summary: &DocumentationSummary) -> impl IntoView {
 fn generate_rendering_item(item: &RenderingItem) -> impl IntoView {
     match &item.content {
         RenderingContent::RenderedDocumentation(ref content) => view! {
-            <div>
-                <div class="panel" inner_html={content}></div>
-            </div>
+            <div class="panel" inner_html={content}></div>
         },
         RenderingContent::Items(ref item) => view! {
             <div>
@@ -159,10 +164,45 @@ fn generate_rendering_item(item: &RenderingItem) -> impl IntoView {
     }
 }
 
-fn generate_content_item(item: &ItemContent) -> impl IntoView {
-    view! {
-        <div>
+fn generate_content_item(item: &ItemContent) -> HtmlElement<Div> {
+    match item {
+        ItemContent::Binding(binding) => generate_binding_item(binding),
+        _ => view! {
             <div class="panel">"TODO"</div>
+        },
+    }
+}
+
+fn generate_binding_item(item: &BindingDefinition) -> HtmlElement<Div> {
+    match &item.kind {
+        BindingType::Const(constant) => generate_constant_item(item, constant),
+        BindingType::Function(function) => generate_function_item(function),
+    }
+}
+
+fn generate_constant_item(item: &BindingDefinition, constant: &ConstantDefinition) -> HtmlElement<Div> {
+    view! {
+        <div class="panel">
+            <h3 class="mono">
+                {&item.name} " " <span class="badge">constant</span>
+            </h3>
+            {constant.value.as_ref().map(|value| view! {
+                <details>
+                    <summary>Literal value</summary>
+                    <code class="literal-value">{value}</code>
+                </details>
+            })}
+            {item.comment.as_ref().map(|comment|
+                view! {
+                    <div class="feature-documentation" inner_html={markdown_to_html(comment)}></div>
+                }
+            )}
         </div>
+    }
+}
+
+fn generate_function_item(item: &FunctionDefinition) -> HtmlElement<Div> {
+    view! {
+        <div class="panel">"TODO: Function"</div>
     }
 }
