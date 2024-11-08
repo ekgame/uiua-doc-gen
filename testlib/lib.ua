@@ -123,11 +123,28 @@
 # And here's the next line
 
 # The constant containing all letters of the american alphabet in lower case.
-Alphabet      ← +@a⇡26
+Alphabet ← +@a⇡26
 
 # The constant containing all the arabic digits.
-Digits        ← +@0⇡10
+Digits ← +@0⇡10
 
 # The constant containing all uppercase and lowercase american alphabet characters
 # and the digits.
-Alphanumeric  ← ⊂⊂ Alphabet ⌵Alphabet Digits
+Alphanumeric ← ⊂⊂ Alphabet ⌵Alphabet Digits
+
+# Noadic function test
+# This function does nothing.
+DoNothing ← ()
+
+# Generate a random number between 0 and 1.
+GenerateRandom ← (⚂)
+
+# Monadic function test
+# This function does nothing - takes an argument and returns it.
+# output ? input
+Identity ← ∘
+
+# Make the first character uppercase.
+# result ? input
+Capitalize ← ⍣(⍜⊢⌵|∘)
+

@@ -176,7 +176,7 @@ fn generate_content_item(item: &ItemContent) -> HtmlElement<Div> {
 fn generate_binding_item(item: &BindingDefinition) -> HtmlElement<Div> {
     match &item.kind {
         BindingType::Const(constant) => generate_constant_item(item, constant),
-        BindingType::Function(function) => generate_function_item(function),
+        BindingType::Function(function) => generate_function_item(item, function),
     }
 }
 
@@ -201,8 +201,50 @@ fn generate_constant_item(item: &BindingDefinition, constant: &ConstantDefinitio
     }
 }
 
-fn generate_function_item(item: &FunctionDefinition) -> HtmlElement<Div> {
+fn generate_function_item(item: &BindingDefinition, function: &FunctionDefinition) -> HtmlElement<Div> {
+    let title_color = match function.signature.inputs {
+        0 => "noadic",
+        1 => "monadic",
+        2 => "dyadic",
+        3 => "triadic",
+        4 => "tetradic",
+        _ => "",
+    };
+    
     view! {
-        <div class="panel">"TODO: Function"</div>
+        <div class="panel">
+            <h3 class={format!("mono {}", title_color)}>
+                {&item.name} " " <span class="badge">function</span>
+            </h3>
+            <div class="function-summary">
+                <span class="summary-badge signature">{format!("|{}.{}", function.signature.inputs, function.signature.outputs)}</span>
+                {function.clone().named_signature.map(|signature|
+                    view! {
+                        {signature.outputs.iter().map(|output|
+                            view! {
+                                <span class="summary-badge output">{output}</span>
+                            }
+                        ).collect_view()}
+                        
+                        "?"
+                        
+                        {signature.inputs.iter().map(|input|
+                            view! {
+                                <span class="summary-badge input">{input}</span>
+                            }
+                        ).collect_view()}
+                    }
+                )}
+            </div>
+            <details>
+                <summary>Source code</summary>
+                <code class="source-code">{&item.code}</code>
+            </details>
+            {item.comment.as_ref().map(|comment|
+                view! {
+                    <div class="feature-documentation" inner_html={markdown_to_html(comment)}></div>
+                }
+            )}
+        </div>
     }
 }

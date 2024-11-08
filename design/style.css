@@ -301,3 +301,23 @@ a {
         background-color: var(--color-text);
     }
 }
+
+.noadic {
+    color: #ed5e6a;
+}
+
+.monadic {
+    color: #95d16a;
+}
+
+.dyadic {
+    color: #54b0fc;
+}
+
+.triadic {
+    color: #8078f1;
+}
+
+.tetradic {
+    color: #f576d8;
+}

@@ -54,10 +54,10 @@ pub fn summarize_content(content: &FileContent, title: String) -> DocumentationS
         sections.push(documentation);
     }
     
-    if let Some(constants) = summarize_constants(&content.items) {
+    if let Some(bindings) = summarize_bindings(&content.items) {
         sections.push(DocumentationSection {
-            title: "Constants".to_owned(),
-            content: vec![constants],
+            title: "Bindings".to_owned(),
+            content: bindings,
         });
     }
 
@@ -161,6 +161,107 @@ fn extract_doc_comments(items: &Vec<ItemContent>) -> Vec<String> {
     }).collect()
 }
 
+fn summarize_bindings(items: &Vec<ItemContent>) -> Option<Vec<RenderingItem>> {
+    let mut results = Vec::new();
+    
+    if let Some(item) = summarize_constants(items) {
+        results.push(item);
+    }
+    
+    if let Some(functions) = summarize_functions(items, 0) {
+        results.push(RenderingItem {
+            links: vec![],
+            content: RenderingContent::Items(ContentItems {
+                title: Title {
+                    title: "Noadic functions".to_owned(),
+                    link_id: "__noadic_functions".to_owned(),
+                },
+                items: functions,
+            }),
+        });
+    }
+
+    if let Some(functions) = summarize_functions(items, 1) {
+        results.push(RenderingItem {
+            links: vec![],
+            content: RenderingContent::Items(ContentItems {
+                title: Title {
+                    title: "Monadic functions".to_owned(),
+                    link_id: "__monadic_functions".to_owned(),
+                },
+                items: functions,
+            }),
+        });
+    }
+
+    if let Some(functions) = summarize_functions(items, 2) {
+        results.push(RenderingItem {
+            links: vec![],
+            content: RenderingContent::Items(ContentItems {
+                title: Title {
+                    title: "Dyadic functions".to_owned(),
+                    link_id: "__dyadic_functions".to_owned(),
+                },
+                items: functions,
+            }),
+        });
+    }
+
+    if let Some(functions) = summarize_functions(items, 3) {
+        results.push(RenderingItem {
+            links: vec![],
+            content: RenderingContent::Items(ContentItems {
+                title: Title {
+                    title: "Triadic functions".to_owned(),
+                    link_id: "__triadic_functions".to_owned(),
+                },
+                items: functions,
+            }),
+        });
+    }
+
+    if let Some(functions) = summarize_functions(items, 4) {
+        results.push(RenderingItem {
+            links: vec![],
+            content: RenderingContent::Items(ContentItems {
+                title: Title {
+                    title: "Tetradic functions".to_owned(),
+                    link_id: "__tetradic_functions".to_owned(),
+                },
+                items: functions,
+            }),
+        });
+    }
+
+    if let Some(functions) = summarize_functions(items, 5) {
+        results.push(RenderingItem {
+            links: vec![],
+            content: RenderingContent::Items(ContentItems {
+                title: Title {
+                    title: "Pentadic functions".to_owned(),
+                    link_id: "__pentadic_functions".to_owned(),
+                },
+                items: functions,
+            }),
+        });
+    }
+
+    if let Some(functions) = summarize_functions(items, 6) {
+        results.push(RenderingItem {
+            links: vec![],
+            content: RenderingContent::Items(ContentItems {
+                title: Title {
+                    title: "Hexadic functions".to_owned(),
+                    link_id: "__hexadic_functions".to_owned(),
+                },
+                items: functions,
+            }),
+        });
+    }
+    
+    Some(results)
+}
+
 fn summarize_constants(items: &Vec<ItemContent>) -> Option<RenderingItem> {
     let constants = items.iter().filter(|item| {
         if let ItemContent::Binding(binding) = item {
@@ -185,4 +286,23 @@ fn summarize_constants(items: &Vec<ItemContent>) -> Option<RenderingItem> {
             items: constants.iter().map(|item| (*item).clone()).collect(),
         }),
     })
+}
+
+fn summarize_functions(items: &Vec<ItemContent>, num_inputs: i32) -> Option<Vec<ItemContent>> {
+    let functions = items.iter().filter(|item| {
+        if let ItemContent::Binding(binding) = item {
+            if let BindingType::Function(function) = &binding.kind {
+                if function.signature.inputs == num_inputs {
+                    return true;
+                }
+            }
+        }
+        false
+    }).collect::<Vec<_>>();
+    
+    if functions.is_empty() {
+        return None;
+    }
+    
+    return Some(functions.iter().map(|item| (*item).clone()).collect());
 }

@@ -96,8 +96,8 @@ pub struct ConstantDefinition {
 
 #[derive(Debug, Clone)]
 pub struct FunctionDefinition {
-    signature: SignatureInfo,
-    named_signature: Option<NamedSignature>,
+    pub signature: SignatureInfo,
+    pub named_signature: Option<NamedSignature>,
 }
 
 #[derive(Debug, Clone)]
