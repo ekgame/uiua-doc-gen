@@ -168,6 +168,19 @@ fn summarize_bindings(items: &Vec<ItemContent>) -> Option<Vec<RenderingItem>> {
         results.push(item);
     }
     
+    if let Some(macros) = summarize_index_macros(items) {
+        results.push(RenderingItem {
+            links: vec![],
+            content: RenderingContent::Items(ContentItems {
+                title: Title {
+                    title: "Index macros".to_owned(),
+                    link_id: "__index_macros".to_owned(),
+                },
+                items: macros,
+            }),
+        });
+    }
+    
     if let Some(functions) = summarize_functions(items, 0) {
         results.push(RenderingItem {
             links: vec![],
@@ -304,5 +317,22 @@ fn summarize_functions(items: &Vec<ItemContent>, num_inputs: i32) -> Option<Vec<
         return None;
     }
     
-    return Some(functions.iter().map(|item| (*item).clone()).collect());
+    Some(functions.iter().map(|item| (*item).clone()).collect())
+}
+
+fn summarize_index_macros(items: &Vec<ItemContent>) -> Option<Vec<ItemContent>> {
+    let macros = items.iter().filter(|item| {
+        if let ItemContent::Binding(binding) = item {
+            if let BindingType::IndexMacro(_) = &binding.kind {
+                return true;
+            }
+        }
+        false
+    }).collect::<Vec<_>>();
+    
+    if macros.is_empty() {
+        return None;
+    }
+    
+    Some(macros.iter().map(|item| (*item).clone()).collect())
 }

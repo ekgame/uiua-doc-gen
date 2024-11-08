@@ -4,7 +4,7 @@ use kuchiki::traits::TendrilSink;
 use leptos::{component, view, CollectView, HtmlElement, IntoView};
 use leptos::html::{Div, Template};
 use thiserror::Error;
-use crate::extractor::{BindingDefinition, BindingType, ConstantDefinition, FunctionDefinition, ItemContent};
+use crate::extractor::{BindingDefinition, BindingType, ConstantDefinition, FunctionDefinition, IndexMacroDefinition, ItemContent, NamedSignature, SignatureInfo};
 use crate::summarizer::{ContentItems, DocumentationSummary, RenderingContent, RenderingItem};
 
 #[derive(Error, Debug)]
@@ -177,6 +177,7 @@ fn generate_binding_item(item: &BindingDefinition) -> HtmlElement<Div> {
     match &item.kind {
         BindingType::Const(constant) => generate_constant_item(item, constant),
         BindingType::Function(function) => generate_function_item(item, function),
+        BindingType::IndexMacro(index_macro) => generate_index_macro_item(item, index_macro),
     }
 }
 
@@ -201,6 +202,41 @@ fn generate_constant_item(item: &BindingDefinition, constant: &ConstantDefinitio
     }
 }
 
+fn generate_named_signature_item(signature: Option<SignatureInfo>, named_signature: Option<NamedSignature>,) -> HtmlElement<Div> {
+    let hidden = match signature.is_none() && named_signature.is_none() {
+        true => "hidden",
+        false => "",
+    };
+    
+    view! {
+        <div class=format!("function-summary {}", hidden)>
+            {signature.map(|signature|
+                view! {
+                    <span class="summary-badge signature">{format!("|{}.{}", signature.inputs, signature.outputs)}</span>
+                }
+            )}
+        
+            {named_signature.map(|signature|
+                view! {
+                    {signature.outputs.iter().map(|output|
+                        view! {
+                            <span class="summary-badge output">{output}</span>
+                        }
+                    ).collect_view()}
+    
+                    "?"
+    
+                    {signature.inputs.iter().map(|input|
+                        view! {
+                            <span class="summary-badge input">{input}</span>
+                        }
+                    ).collect_view()}
+                }
+            )}
+        </div>
+    }
+}
+
 fn generate_function_item(item: &BindingDefinition, function: &FunctionDefinition) -> HtmlElement<Div> {
     let title_color = match function.signature.inputs {
         0 => "noadic",
@@ -216,30 +252,42 @@ fn generate_function_item(item: &BindingDefinition, function: &FunctionDefinitio
             <h3 class={format!("mono {}", title_color)}>
                 {&item.name} " " <span class="badge">function</span>
             </h3>
-            <div class="function-summary">
-                <span class="summary-badge signature">{format!("|{}.{}", function.signature.inputs, function.signature.outputs)}</span>
-                {function.clone().named_signature.map(|signature|
-                    view! {
-                        {signature.outputs.iter().map(|output|
-                            view! {
-                                <span class="summary-badge output">{output}</span>
-                            }
-                        ).collect_view()}
-                        
-                        "?"
-                        
-                        {signature.inputs.iter().map(|input|
-                            view! {
-                                <span class="summary-badge input">{input}</span>
-                            }
-                        ).collect_view()}
-                    }
-                )}
-            </div>
+        
+            {generate_named_signature_item(Some(function.signature.clone()), function.named_signature.clone())}
+        
             <details>
                 <summary>Source code</summary>
                 <code class="source-code">{&item.code}</code>
             </details>
+            {item.comment.as_ref().map(|comment|
+                view! {
+                    <div class="feature-documentation" inner_html={markdown_to_html(comment)}></div>
+                }
+            )}
+        </div>
+    }
+}
+
+fn generate_index_macro_item(item: &BindingDefinition, index_macro: &IndexMacroDefinition) -> HtmlElement<Div> {
+    let title_color = match index_macro.arguments {
+        1 => "monadic-modifier",
+        2 => "dyadic-modifier",
+        _ => "triadic-modifier",
+    };
+    
+    view! {
+        <div class="panel">
+            <h3 class={format!("mono {}", title_color)}>
+                {&item.name} " " <span class="badge">index macro</span>
+            </h3>
+        
+            {generate_named_signature_item(None, index_macro.named_signature.clone())}
+        
+            <details>
+                <summary>Source code</summary>
+                <code class="source-code">{item.clone().code}</code>
+            </details>
+        
             {item.comment.as_ref().map(|comment|
                 view! {
                     <div class="feature-documentation" inner_html={markdown_to_html(comment)}></div>

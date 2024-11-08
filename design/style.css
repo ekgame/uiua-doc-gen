@@ -320,6 +320,18 @@ code {
     color: #f576d8;
 }
 
+.monadic-modifier {
+    color: #f0c36f;
+}
+
+.dyadic-modifier {
+    color: #cc6be9;
+}
+
+.triadic-modifier {
+    color: #F5A9B8;
+}
+
 table {
     box-sizing: border-box;
     width: 100%;
@@ -346,4 +358,8 @@ table td.focus {
 
 table td code {
     word-break: break-all;
+}
+
+.hidden {
+    display: none;
 }

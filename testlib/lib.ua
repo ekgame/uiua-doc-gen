@@ -96,3 +96,14 @@ Identity ← ∘
 # result ? input
 Capitalize ← ⍣(⍜⊢⌵|∘)
 
+# Test macro
+F! ← ^1
+
+# Test macro 2
+F‼ ← ^1^2
+
+# Test macro 3
+F‼! ← ^1^2^3
+
+# Test macro 4
+F‼‼ ← ^1^2^3^4

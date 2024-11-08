@@ -101,9 +101,16 @@ pub struct FunctionDefinition {
 }
 
 #[derive(Debug, Clone)]
+pub struct IndexMacroDefinition {
+    pub arguments: usize,
+    pub named_signature: Option<NamedSignature>,
+}
+
+#[derive(Debug, Clone)]
 pub enum BindingType {
     Const(ConstantDefinition),
     Function(FunctionDefinition),
+    IndexMacro(IndexMacroDefinition),
 }
 
 #[derive(Debug)]
@@ -201,6 +208,10 @@ fn handle_ast_items(items: Vec<Item>, asm: &Assembly) -> Vec<ItemContent> {
                         signature: format_signature(function.signature),
                         named_signature: signature.map(signature_comment_to_struct),
                     }),
+                    BindingKind::IndexMacro(code_macro_args) => BindingType::IndexMacro(IndexMacroDefinition {
+                        arguments: code_macro_args,
+                        named_signature: signature.map(signature_comment_to_struct),
+                    }), 
                     _ => continue,
                 };
 
@@ -279,6 +290,9 @@ pub enum ExtractError {
     
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
+    
+    #[error("Uiua Error: {0}")]
+    UiuaError(#[from] uiua::UiuaError),
 }
 
 pub fn extract_uiua_definitions(path: &PathBuf) -> Result<Vec<FileContent>, ExtractError> {
@@ -291,7 +305,7 @@ pub fn extract_uiua_definitions(path: &PathBuf) -> Result<Vec<FileContent>, Extr
     let _ = backend.change_directory(path.to_str().unwrap());
 
     let mut comp = Compiler::with_backend(backend);
-    let asm = comp.load_file(lib_path.clone()).unwrap().finish();
+    let asm = comp.load_file(lib_path.clone())?.finish();
 
     let mut inputs = asm.inputs.clone();
     let files: Vec<_> = inputs.files.iter()
