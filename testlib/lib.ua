@@ -83,19 +83,6 @@
 # Capitalize ← ⍣(⍜⊢⌵|∘)
 # ```
 # 
-# # Blockquotes
-# 
-# > Single line blockquote
-# 
-# > Multi-line blockquote
-# > with multiple paragraphs
-# >
-# > Like this
-# 
-# > Nested blockquotes
-# >> Can go deeper
-# >>> And deeper still
-# 
 # # Tables
 # 
 # | Header 1 | Header 2 | Header 3 |
@@ -107,16 +94,7 @@
 # | Minimal | Table |
 # |---------|-------|
 # | Still   | Works |
-# 
-# # Task Lists
-# 
-# - [x] Completed task
-# - [ ] Incomplete task
-# - [x] @mentions, #refs, [links](), **formatting**, and ~~tags~~ supported
-# - [ ] Sub-tasks
-#   - [x] Completed sub-task
-#   - [ ] Incomplete sub-task
-# 
+#
 # # Line Breaks and Horizontal Rules
 # 
 # Here's a line break using two spaces at the end  

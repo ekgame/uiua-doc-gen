@@ -17,7 +17,7 @@
 
     --color-highlight: var(--red);
     --color-panel: var(--dark-gray);
-    
+
     --color-text: var(--white);
     --color-text-link: var(--red);
     --color-badge: var(--mauve);
@@ -117,7 +117,7 @@ a {
     margin-bottom: 0.5em;
 }
 
-.sidebar-section {
+.sidebar-section, li {
     & > *:first-child {
         margin-top: 0;
     }
@@ -129,7 +129,7 @@ a {
 
 .feature-documentation {
     margin-top: 1em;
-    
+
     & > *:first-child {
         margin-top: 0;
     }
@@ -155,16 +155,14 @@ a {
     top: -0.15em;
 }
 
-.literal-value {
-    display: flex;
-    padding: 1em;
-    background-color: var(--color-separator);
+code {
     font-family: Uiua386, monospace;
-    overflow: auto;
-    white-space: pre;
+    background-color: var(--color-separator);
+    padding: 0.25em 0.5em;
+    border-radius: 5px;
 }
 
-.source-code {
+.literal-value, .source-code, pre > code {
     display: flex;
     padding: 1em;
     background-color: var(--color-separator);
@@ -320,4 +318,32 @@ a {
 
 .tetradic {
     color: #f576d8;
+}
+
+table {
+    box-sizing: border-box;
+    width: 100%;
+    margin: 30px 0;
+    border: 1px solid #999;
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+table th, table td {
+    padding: 10px;
+    vertical-align: middle;
+    border: 1px solid var(--color-separator);
+    font-size: 90%;
+}
+
+table th {
+    font-weight: bold;
+}
+
+table td.focus {
+    font-size: 20px;
+}
+
+table td code {
+    word-break: break-all;
 }
