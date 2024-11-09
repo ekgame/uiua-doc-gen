@@ -4,7 +4,7 @@ use kuchiki::traits::TendrilSink;
 use leptos::{component, view, CollectView, HtmlElement, IntoView};
 use leptos::html::{Div, Template};
 use thiserror::Error;
-use crate::extractor::{BindingDefinition, BindingType, CodeMacroDefinition, ConstantDefinition, FunctionDefinition, IndexMacroDefinition, ItemContent, NamedSignature, SignatureInfo};
+use crate::extractor::{BindingDefinition, BindingType, CodeMacroDefinition, ConstantDefinition, FunctionDefinition, IndexMacroDefinition, ItemContent, ModuleDefinition, NamedSignature, SignatureInfo};
 use crate::summarizer::{ContentItems, DocumentationSummary, RenderingContent, RenderingItem};
 
 #[derive(Error, Debug)]
@@ -156,7 +156,7 @@ fn generate_rendering_item(item: &RenderingItem) -> impl IntoView {
             <div>
                 <h2 id={&item.title.link_id}>{&item.title.title}</h2>
                 {item.items.iter()
-                    .map(|item| generate_content_item(item))
+                    .map(|item| generate_content_item(None, item))
                     .collect_view()
                 }
             </div>
@@ -164,29 +164,35 @@ fn generate_rendering_item(item: &RenderingItem) -> impl IntoView {
     }
 }
 
-fn generate_content_item(item: &ItemContent) -> HtmlElement<Div> {
+fn generate_content_item(parent_module: Option<String>, item: &ItemContent) -> HtmlElement<Div> {
     match item {
-        ItemContent::Binding(binding) => generate_binding_item(binding),
+        ItemContent::Binding(binding) => generate_binding_item(parent_module, binding),
+        ItemContent::Module(module ) => generate_module_item(parent_module, module),
         _ => view! {
-            <div class="panel">"TODO"</div>
+            <div class="panel">{format!("{:?}", item)}</div>
         },
     }
 }
 
-fn generate_binding_item(item: &BindingDefinition) -> HtmlElement<Div> {
+fn generate_binding_item(parent_module: Option<String>, item: &BindingDefinition) -> HtmlElement<Div> {
     match &item.kind {
-        BindingType::Const(constant) => generate_constant_item(item, constant),
-        BindingType::Function(function) => generate_function_item(item, function),
-        BindingType::IndexMacro(index_macro) => generate_index_macro_item(item, index_macro),
-        BindingType::CodeMacro(code_macro) => generate_code_macro_item(item, code_macro),
+        BindingType::Const(constant) => generate_constant_item(parent_module, item, constant),
+        BindingType::Function(function) => generate_function_item(parent_module, item, function),
+        BindingType::IndexMacro(index_macro) => generate_index_macro_item(parent_module, item, index_macro),
+        BindingType::CodeMacro(code_macro) => generate_code_macro_item(parent_module, item, code_macro),
     }
 }
 
-fn generate_constant_item(item: &BindingDefinition, constant: &ConstantDefinition) -> HtmlElement<Div> {
+fn generate_constant_item(parent_module: Option<String>, item: &BindingDefinition, constant: &ConstantDefinition) -> HtmlElement<Div> {
+    let constant_name = match parent_module {
+        Some(parent) => format!("{}~{}", parent, item.name.clone()),
+        None => item.name.clone(),
+    };
+    
     view! {
         <div class="panel">
             <h3 class="mono">
-                {&item.name} " " <span class="badge">constant</span>
+                {constant_name} " " <span class="badge">constant</span>
             </h3>
             {constant.value.as_ref().map(|value| view! {
                 <details>
@@ -238,7 +244,12 @@ fn generate_named_signature_item(signature: Option<SignatureInfo>, named_signatu
     }
 }
 
-fn generate_function_item(item: &BindingDefinition, function: &FunctionDefinition) -> HtmlElement<Div> {
+fn generate_function_item(parent_module: Option<String>, item: &BindingDefinition, function: &FunctionDefinition) -> HtmlElement<Div> {
+    let function_name = match parent_module {
+        Some(parent) => format!("{}~{}", parent, item.name.clone()),
+        None => item.name.clone(),
+    };
+    
     let title_color = match function.signature.inputs {
         0 => "noadic",
         1 => "monadic",
@@ -251,7 +262,7 @@ fn generate_function_item(item: &BindingDefinition, function: &FunctionDefinitio
     view! {
         <div class="panel">
             <h3 class={format!("mono {}", title_color)}>
-                {&item.name} " " <span class="badge">function</span>
+                {function_name} " " <span class="badge">function</span>
             </h3>
         
             {generate_named_signature_item(Some(function.signature.clone()), function.named_signature.clone())}
@@ -269,7 +280,12 @@ fn generate_function_item(item: &BindingDefinition, function: &FunctionDefinitio
     }
 }
 
-fn generate_index_macro_item(item: &BindingDefinition, index_macro: &IndexMacroDefinition) -> HtmlElement<Div> {
+fn generate_index_macro_item(parent_module: Option<String>, item: &BindingDefinition, index_macro: &IndexMacroDefinition) -> HtmlElement<Div> {
+    let macro_name = match parent_module {
+        Some(parent) => format!("{}~{}", parent, item.name.clone()),
+        None => item.name.clone(),
+    };
+    
     let title_color = match index_macro.arguments {
         1 => "monadic-modifier",
         2 => "dyadic-modifier",
@@ -279,7 +295,7 @@ fn generate_index_macro_item(item: &BindingDefinition, index_macro: &IndexMacroD
     view! {
         <div class="panel">
             <h3 class={format!("mono {}", title_color)}>
-                {&item.name} " " <span class="badge">index macro</span>
+                {macro_name} " " <span class="badge">index macro</span>
             </h3>
         
             {generate_named_signature_item(None, index_macro.named_signature.clone())}
@@ -298,25 +314,53 @@ fn generate_index_macro_item(item: &BindingDefinition, index_macro: &IndexMacroD
     }
 }
 
-fn generate_code_macro_item(item: &BindingDefinition, index_macro: &CodeMacroDefinition) -> HtmlElement<Div> {
+fn generate_code_macro_item(parent_module: Option<String>, item: &BindingDefinition, index_macro: &CodeMacroDefinition) -> HtmlElement<Div> {
+    let macro_name = match parent_module {
+        Some(parent) => format!("{}~{}", parent, item.name.clone()),
+        None => item.name.clone(),
+    };
+    
     view! {
         <div class="panel">
             <h3 class="mono monadic-modifier">
-                {&item.name} " " <span class="badge">code macro</span>
+                {macro_name} " " <span class="badge">code macro</span>
             </h3>
-        
+
             {generate_named_signature_item(None, index_macro.named_signature.clone())}
-        
+
             <details>
                 <summary>Source code</summary>
                 <code class="source-code">{item.clone().code}</code>
             </details>
-        
+
             {item.comment.as_ref().map(|comment|
                 view! {
                     <div class="feature-documentation" inner_html={markdown_to_html(comment)}></div>
                 }
             )}
+        </div>
+    }
+}
+
+fn generate_module_item(parent_module: Option<String>, module: &ModuleDefinition) -> HtmlElement<Div> {
+    let module_name = match parent_module {
+        Some(parent) => format!("{}~{}", parent, module.name.clone()),
+        None => module.name.clone(),
+    };
+    
+    view! {
+        <div class="panel">
+            <h3 class="mono module">{module_name.clone()} " " <span class="badge">module</span></h3>
+            {module.comment.as_ref().map(|comment|
+                view! {
+                    <div class="feature-documentation" inner_html={markdown_to_html(comment)}></div>
+                }
+            )}
+            <br/>
+            {module.items.iter()
+                .map(|item| generate_content_item(Some(module_name.clone()), item))
+                .collect_view()
+            }
         </div>
     }
 }

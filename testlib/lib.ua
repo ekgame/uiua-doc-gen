@@ -107,3 +107,20 @@ F‼! ← ^1^2^3
 
 # Test macro 5
 Enum! ←^ ⍚($"_ ← $_ _\n".) :⇡⧻.⍚(⊂∩°□)°⊂
+
+# Test module description.
+---TestModule
+    ModuleFunction ← ∘
+    ModuleFunction__2 ← ∘
+
+    ---SubModule
+        ModuleFunction ← ∘
+        ModuleFunction__2 ← ∘
+    ---
+---
+
+# Test module with only private items, should not be generated.
+---TestModule__2
+    ModuleFunction__3 ↚ ∘
+    ModuleFunction__4 ↚ ∘
+---

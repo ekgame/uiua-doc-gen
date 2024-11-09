@@ -3,7 +3,7 @@ use markup5ever::namespace_url;
 use markup5ever::{local_name, ns, QualName};
 use kuchiki::traits::TendrilSink;
 use kuchiki::NodeRef;
-use crate::extractor::{BindingType, FileContent, ItemContent};
+use crate::extractor::{BindingType, FileContent, ItemContent, ModuleDefinition};
 
 #[derive(Debug, Clone)]
 pub struct Title {
@@ -36,8 +36,16 @@ pub struct RenderingItem {
 }
 
 #[derive(Debug, Clone)]
+pub enum SectionType {
+    Documentation,
+    Modules,
+    Bindings,
+}
+
+#[derive(Debug, Clone)]
 pub struct DocumentationSection {
     pub title: String,
+    pub section_type: SectionType,
     pub content: Vec<RenderingItem>,
 }
 
@@ -54,9 +62,33 @@ pub fn summarize_content(content: &FileContent, title: String) -> DocumentationS
         sections.push(documentation);
     }
     
+    if let Some(modules) = summarize_modules(&content.items) {
+        sections.push(DocumentationSection {
+            title: "Modules".to_owned(),
+            section_type: SectionType::Modules,
+            content: modules.iter().map(|item| {
+                if let ItemContent::Module(module) = item {
+                    RenderingItem {
+                        links: vec![],
+                        content: RenderingContent::Items(ContentItems {
+                            title: Title {
+                                title: module.name.clone(),
+                                link_id: module.name.clone(),
+                            },
+                            items: vec![item.clone()],
+                        }),
+                    }
+                } else {
+                    panic!("Expected module item");
+                }
+            }).collect(),
+        });
+    }
+    
     if let Some(bindings) = summarize_bindings(&content.items) {
         sections.push(DocumentationSection {
             title: "Bindings".to_owned(),
+            section_type: SectionType::Bindings,
             content: bindings,
         });
     }
@@ -82,6 +114,7 @@ fn summarize_doc_comments(content: &FileContent) -> Option<DocumentationSection>
 
     Some(DocumentationSection {
         title: "Documentation".to_owned(),
+        section_type: SectionType::Documentation,
         content: items,
     })
 }
@@ -365,4 +398,40 @@ fn summarize_code_macros(items: &Vec<ItemContent>) -> Option<Vec<ItemContent>> {
     }
     
     Some(macros.iter().map(|item| (*item).clone()).collect())
+}
+
+fn summarize_modules(items: &Vec<ItemContent>) -> Option<Vec<ItemContent>> {
+    let modules = items.iter().filter(|item| {
+        if let ItemContent::Module(module) = item {
+            return module.has_public_items();
+        }
+        false
+    }).collect::<Vec<_>>();
+    
+    if modules.is_empty() {
+        return None;
+    }
+    
+    Some(modules.iter().map(|item| ItemContent::Module(ModuleDefinition {
+        name: match item {
+            ItemContent::Module(module) => module.name.clone(),
+            _ => panic!("Expected module item"),
+        },
+        items: match item {
+            ItemContent::Module(module) => module.items.iter().filter(|item| {
+                match item {
+                    ItemContent::Binding(binding) => binding.public,
+                    ItemContent::Module(module) => module.has_public_items(),
+                    ItemContent::Variant(_) => true,
+                    ItemContent::Data(_) => true,
+                    _ => false,
+                }
+            }).map(|item| item.clone()).collect(),
+            _ => panic!("Expected module item"),
+        },
+        comment: match item {
+            ItemContent::Module(module) => module.comment.clone(),
+            _ => None,
+        },
+    })).collect())
 }

@@ -332,6 +332,10 @@ code {
     color: #F5A9B8;
 }
 
+.module {
+    color: #D7BE8C;
+}
+
 table {
     box-sizing: border-box;
     width: 100%;

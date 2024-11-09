@@ -59,6 +59,18 @@ pub struct ModuleDefinition {
     pub items: Vec<ItemContent>,
 }
 
+impl ModuleDefinition {
+    pub fn has_public_items(&self) -> bool {
+        self.items.iter().any(|item| match item {
+            ItemContent::Binding(binding) => binding.public,
+            ItemContent::Module(module) => module.has_public_items(),
+            ItemContent::Data(_) => true,
+            ItemContent::Variant(_) => true,
+            _ => false,
+        })
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct DataDefinition {
     pub name: Option<String>,
