@@ -107,10 +107,16 @@ pub struct IndexMacroDefinition {
 }
 
 #[derive(Debug, Clone)]
+pub struct CodeMacroDefinition {
+    pub named_signature: Option<NamedSignature>,
+}
+
+#[derive(Debug, Clone)]
 pub enum BindingType {
     Const(ConstantDefinition),
     Function(FunctionDefinition),
     IndexMacro(IndexMacroDefinition),
+    CodeMacro(CodeMacroDefinition),
 }
 
 #[derive(Debug)]
@@ -201,7 +207,7 @@ fn handle_ast_items(items: Vec<Item>, asm: &Assembly) -> Vec<ItemContent> {
                 let signature = info.comment.and_then(|comment| comment.sig);
 
                 let kind = match info.kind {
-                    BindingKind::Const(value) => BindingType::Const( ConstantDefinition {
+                    BindingKind::Const(value) => BindingType::Const(ConstantDefinition {
                         value: value.map(|v| v.to_string()),
                     }),
                     BindingKind::Func(function) => BindingType::Function(FunctionDefinition {
@@ -211,7 +217,10 @@ fn handle_ast_items(items: Vec<Item>, asm: &Assembly) -> Vec<ItemContent> {
                     BindingKind::IndexMacro(code_macro_args) => BindingType::IndexMacro(IndexMacroDefinition {
                         arguments: code_macro_args,
                         named_signature: signature.map(signature_comment_to_struct),
-                    }), 
+                    }),
+                    BindingKind::CodeMacro(code_macro_args) => BindingType::CodeMacro(CodeMacroDefinition {
+                        named_signature: signature.map(signature_comment_to_struct),
+                    }),
                     _ => continue,
                 };
 

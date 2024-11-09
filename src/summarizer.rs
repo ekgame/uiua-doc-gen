@@ -168,6 +168,19 @@ fn summarize_bindings(items: &Vec<ItemContent>) -> Option<Vec<RenderingItem>> {
         results.push(item);
     }
     
+    if let Some(macros) = summarize_code_macros(items) {
+        results.push(RenderingItem {
+            links: vec![],
+            content: RenderingContent::Items(ContentItems {
+                title: Title {
+                    title: "Code macros".to_owned(),
+                    link_id: "__code_macros".to_owned(),
+                },
+                items: macros,
+            }),
+        });
+    }
+    
     if let Some(macros) = summarize_index_macros(items) {
         results.push(RenderingItem {
             links: vec![],
@@ -324,6 +337,23 @@ fn summarize_index_macros(items: &Vec<ItemContent>) -> Option<Vec<ItemContent>> 
     let macros = items.iter().filter(|item| {
         if let ItemContent::Binding(binding) = item {
             if let BindingType::IndexMacro(_) = &binding.kind {
+                return true;
+            }
+        }
+        false
+    }).collect::<Vec<_>>();
+    
+    if macros.is_empty() {
+        return None;
+    }
+    
+    Some(macros.iter().map(|item| (*item).clone()).collect())
+}
+
+fn summarize_code_macros(items: &Vec<ItemContent>) -> Option<Vec<ItemContent>> {
+    let macros = items.iter().filter(|item| {
+        if let ItemContent::Binding(binding) = item {
+            if let BindingType::CodeMacro(_) = &binding.kind {
                 return true;
             }
         }

@@ -4,7 +4,7 @@ use kuchiki::traits::TendrilSink;
 use leptos::{component, view, CollectView, HtmlElement, IntoView};
 use leptos::html::{Div, Template};
 use thiserror::Error;
-use crate::extractor::{BindingDefinition, BindingType, ConstantDefinition, FunctionDefinition, IndexMacroDefinition, ItemContent, NamedSignature, SignatureInfo};
+use crate::extractor::{BindingDefinition, BindingType, CodeMacroDefinition, ConstantDefinition, FunctionDefinition, IndexMacroDefinition, ItemContent, NamedSignature, SignatureInfo};
 use crate::summarizer::{ContentItems, DocumentationSummary, RenderingContent, RenderingItem};
 
 #[derive(Error, Debug)]
@@ -178,6 +178,7 @@ fn generate_binding_item(item: &BindingDefinition) -> HtmlElement<Div> {
         BindingType::Const(constant) => generate_constant_item(item, constant),
         BindingType::Function(function) => generate_function_item(item, function),
         BindingType::IndexMacro(index_macro) => generate_index_macro_item(item, index_macro),
+        BindingType::CodeMacro(code_macro) => generate_code_macro_item(item, code_macro),
     }
 }
 
@@ -279,6 +280,29 @@ fn generate_index_macro_item(item: &BindingDefinition, index_macro: &IndexMacroD
         <div class="panel">
             <h3 class={format!("mono {}", title_color)}>
                 {&item.name} " " <span class="badge">index macro</span>
+            </h3>
+        
+            {generate_named_signature_item(None, index_macro.named_signature.clone())}
+        
+            <details>
+                <summary>Source code</summary>
+                <code class="source-code">{item.clone().code}</code>
+            </details>
+        
+            {item.comment.as_ref().map(|comment|
+                view! {
+                    <div class="feature-documentation" inner_html={markdown_to_html(comment)}></div>
+                }
+            )}
+        </div>
+    }
+}
+
+fn generate_code_macro_item(item: &BindingDefinition, index_macro: &CodeMacroDefinition) -> HtmlElement<Div> {
+    view! {
+        <div class="panel">
+            <h3 class="mono monadic-modifier">
+                {&item.name} " " <span class="badge">code macro</span>
             </h3>
         
             {generate_named_signature_item(None, index_macro.named_signature.clone())}
