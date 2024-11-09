@@ -292,7 +292,7 @@ fn summarize_constants(items: &Vec<ItemContent>) -> Option<RenderingItem> {
     let constants = items.iter().filter(|item| {
         if let ItemContent::Binding(binding) = item {
             if let BindingType::Const(_) = &binding.kind {
-                return true;
+                return binding.public;
             }
         }
         false
@@ -319,7 +319,7 @@ fn summarize_functions(items: &Vec<ItemContent>, num_inputs: i32) -> Option<Vec<
         if let ItemContent::Binding(binding) = item {
             if let BindingType::Function(function) = &binding.kind {
                 if function.signature.inputs == num_inputs {
-                    return true;
+                    return binding.public;
                 }
             }
         }
@@ -337,7 +337,7 @@ fn summarize_index_macros(items: &Vec<ItemContent>) -> Option<Vec<ItemContent>> 
     let macros = items.iter().filter(|item| {
         if let ItemContent::Binding(binding) = item {
             if let BindingType::IndexMacro(_) = &binding.kind {
-                return true;
+                return binding.public;
             }
         }
         false
@@ -354,7 +354,7 @@ fn summarize_code_macros(items: &Vec<ItemContent>) -> Option<Vec<ItemContent>> {
     let macros = items.iter().filter(|item| {
         if let ItemContent::Binding(binding) = item {
             if let BindingType::CodeMacro(_) = &binding.kind {
-                return true;
+                return binding.public;
             }
         }
         false

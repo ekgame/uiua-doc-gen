@@ -211,7 +211,7 @@ fn handle_ast_items(items: Vec<Item>, asm: &Assembly) -> Vec<ItemContent> {
                         value: value.map(|v| v.to_string()),
                     }),
                     BindingKind::Func(function) => BindingType::Function(FunctionDefinition {
-                        signature: format_signature(function.signature),
+                        signature: format_signature(function.sig),
                         named_signature: signature.map(signature_comment_to_struct),
                     }),
                     BindingKind::IndexMacro(code_macro_args) => BindingType::IndexMacro(IndexMacroDefinition {
