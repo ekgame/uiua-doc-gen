@@ -74,6 +74,7 @@ impl ModuleDefinition {
 #[derive(Debug, Clone)]
 pub struct DataDefinition {
     pub name: Option<String>,
+    pub comment: Option<String>,
     pub definition: Option<Definition>,
 }
 
@@ -275,6 +276,14 @@ fn handle_ast_items(items: Vec<Item>, asm: &Assembly) -> Vec<ItemContent> {
                         }).collect(),
                     }
                 });
+                
+                let info = match &data_def.name {
+                    Some(name) => match get_binding_info(asm, &name.span) {
+                        Some(info) => Some(info),
+                        None => panic!("Data definition without binding info"),
+                    },
+                    None => None,
+                };
 
                 let item_content = if data_def.variant {
                     ItemContent::Variant(VariantDefinition {
@@ -284,6 +293,7 @@ fn handle_ast_items(items: Vec<Item>, asm: &Assembly) -> Vec<ItemContent> {
                 } else {
                     ItemContent::Data(DataDefinition {
                         name: data_def.name.map(|name| name.value.to_string()),
+                        comment: info.and_then(|info| info.comment.clone().map(|comment| comment.text.to_string())),
                         definition,
                     })
                 };

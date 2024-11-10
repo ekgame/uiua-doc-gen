@@ -207,7 +207,17 @@ code {
     .data-badge {
         color: black;
         padding: 0.25em 0.5em;
-        border-radius: 50px;
+        font-weight: bold;
+    }
+
+    .badge-row > .data-badge:first-child {
+        border-top-left-radius: 50px;
+        border-bottom-left-radius: 50px;
+    }
+
+    .badge-row > .data-badge:last-child {
+        border-top-right-radius: 50px;
+        border-bottom-right-radius: 50px;
     }
 
     .type {
@@ -366,4 +376,8 @@ table td code {
 
 .hidden {
     display: none;
+}
+
+.italics {
+    font-style: italic;
 }

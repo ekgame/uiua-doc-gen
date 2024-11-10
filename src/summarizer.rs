@@ -201,6 +201,19 @@ fn summarize_bindings(items: &Vec<ItemContent>) -> Option<Vec<RenderingItem>> {
         results.push(item);
     }
     
+    if let Some(data) = summarize_data(items) {
+        results.push(RenderingItem {
+            links: vec![],
+            content: RenderingContent::Items(ContentItems {
+                title: Title {
+                    title: "Data types".to_owned(),
+                    link_id: "__data".to_owned(),
+                },
+                items: data,
+            }),
+        });
+    }
+    
     if let Some(macros) = summarize_code_macros(items) {
         results.push(RenderingItem {
             links: vec![],
@@ -434,4 +447,19 @@ fn summarize_modules(items: &Vec<ItemContent>) -> Option<Vec<ItemContent>> {
             _ => None,
         },
     })).collect())
+}
+
+fn summarize_data(items: &Vec<ItemContent>) -> Option<Vec<ItemContent>> {
+    let data = items.iter().filter(|item| {
+        if let ItemContent::Data(_) = item {
+            return true;
+        }
+        false
+    }).collect::<Vec<_>>();
+    
+    if data.is_empty() {
+        return None;
+    }
+    
+    Some(data.iter().map(|item| (*item).clone()).collect())
 }

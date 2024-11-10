@@ -4,68 +4,68 @@
 
 # !doc
 # # Headers
-#
+# 
 # ## H2 Header
 # ### H3 Header
 # #### H4 Header
 # ##### H5 Header
 # ###### H6 Header
-#
+# 
 # Alt H1 Header
 # ============
-#
+# 
 # Alt H2 Header
 # ------------
-#
+# 
 # # Text Formatting
-#
+# 
 # Regular text
-#
+# 
 # **Bold text**
-#
+# 
 # *Italic text*
-#
+# 
 # ***Bold and italic text***
-#
+# 
 # ~~Strikethrough text~~
-#
+# 
 # `Inline code`
-#
+# 
 # # Links and References
-#
+# 
 # [Basic link](https://www.example.com)
-#
+# 
 # [Link with title](https://www.example.com "Link title")
-#
+# 
 # # Lists
-#
+# 
 # 1. First ordered list item
 # 2. Second ordered list item
-#
+# 
 # * Unordered list item
 # * Another unordered item
-#
+# 
 # # Code Blocks
-#
+# 
 # ```
 # Generic code block
 # No syntax highlighting
 # ```
-#
+# 
 # ```uiua
 # # Make the first character uppercase.
 # # result ? input
 # Capitalize ← ⍣(⍜⊢⌵|∘)
 # ```
-#
+# 
 # # Tables
-#
+# 
 # | Header 1 | Header 2 | Header 3 |
 # |----------|:--------:|---------:|
 # | Left     | Center   | Right    |
 # | aligned  | aligned  | aligned  |
 # | cells    | cells    | cells    |
-#
+# 
 # | Minimal | Table |
 # |---------|-------|
 # | Still   | Works |
@@ -109,18 +109,57 @@ F‼! ← ^1^2^3
 Enum! ←^ ⍚($"_ ← $_ _\n".) :⇡⧻.⍚(⊂∩°□)°⊂
 
 # Test module description.
----TestModule
-    ModuleFunction ← ∘
-    ModuleFunction__2 ← ∘
+┌─╴TestModule
 
-    ---SubModule
-        ModuleFunction ← ∘
-        ModuleFunction__2 ← ∘
-    ---
----
+  # Test comment
+  ~[Unnamed Data Definition]
+
+  # Test comment 2
+  ~TestDataNotBoxed [Not Boxed]
+
+  # Test comment 3
+  ~TestDataBoxed {Boxed Data}
+
+  # Test comment 4
+  ~TestDataWithValidators {
+    Boxed: °0type
+    Data: °1type
+    With: °2type
+    Validators: °3type
+    StringType: °1⧻△
+    MoreThanThreeType: °1>3
+  }
+
+  ModuleFunction  ← ∘
+  ModuleFunction₂ ← ∘
+  
+  ┌─╴SubModule
+    ModuleFunction  ← ∘
+    ModuleFunction₂ ← ∘
+  └─╴
+└─╴
 
 # Test module with only private items, should not be generated.
----TestModule__2
-    ModuleFunction__3 ↚ ∘
-    ModuleFunction__4 ↚ ∘
----
+┌─╴TestModule₂
+  ModuleFunction₃ ↚ ∘
+  ModuleFunction₄ ↚ ∘
+└─╴
+
+# Test comment
+~[Unnamed Data Definition]
+
+# Test comment 2
+~TestDataNotBoxed [Not Boxed]
+
+# Test comment 3
+~TestDataBoxed {Boxed Data}
+
+# Test comment 4
+~TestDataWithValidators {
+  Boxed: °0type
+  Data: °1type
+  With: °2type
+  Validators: °3type
+  StringType: °1⧻△
+  MoreThanThreeType: °1>3
+}

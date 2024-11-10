@@ -3,8 +3,9 @@ use std::path::PathBuf;
 use kuchiki::traits::TendrilSink;
 use leptos::{component, view, CollectView, HtmlElement, IntoView};
 use leptos::html::{Div, Template};
+use leptos::html::StringOrView::View;
 use thiserror::Error;
-use crate::extractor::{BindingDefinition, BindingType, CodeMacroDefinition, ConstantDefinition, FunctionDefinition, IndexMacroDefinition, ItemContent, ModuleDefinition, NamedSignature, SignatureInfo};
+use crate::extractor::{BindingDefinition, BindingType, CodeMacroDefinition, ConstantDefinition, DataDefinition, FunctionDefinition, IndexMacroDefinition, ItemContent, ModuleDefinition, NamedSignature, SignatureInfo};
 use crate::summarizer::{ContentItems, DocumentationSummary, RenderingContent, RenderingItem};
 
 #[derive(Error, Debug)]
@@ -168,6 +169,7 @@ fn generate_content_item(parent_module: Option<String>, item: &ItemContent) -> H
     match item {
         ItemContent::Binding(binding) => generate_binding_item(parent_module, binding),
         ItemContent::Module(module ) => generate_module_item(parent_module, module),
+        ItemContent::Data(data) => generate_data_item(parent_module, data),
         _ => view! {
             <div class="panel">{format!("{:?}", item)}</div>
         },
@@ -361,6 +363,98 @@ fn generate_module_item(parent_module: Option<String>, module: &ModuleDefinition
                 .map(|item| generate_content_item(Some(module_name.clone()), item))
                 .collect_view()
             }
+        </div>
+    }
+}
+
+fn generate_data_item(parent_module: Option<String>, data: &DataDefinition) -> HtmlElement<Div> {
+    let data_name = match parent_module {
+        Some(parent) => match &data.name {
+            Some(name) => format!("{}~{}", parent, name),
+            None => parent.clone(),
+        }
+        None => match &data.name {
+            Some(name) => name.clone(),
+            None => "".to_string(),
+        }
+    };
+    
+    view! {
+        <div class="panel">
+            <h3 class="mono">
+                {data_name} " " <span class="badge">data</span> " " {
+                    if let Some(definition) = &data.definition {
+                        match definition.boxed {
+                            true => view! { <span class="badge">boxed</span> },
+                            false => view! { <span class="badge">unboxed</span> },
+                        }
+                    } else {
+                        view! { <span class="badge">no values</span> }
+                    }
+                }
+            </h3>
+            {data.clone().comment.as_ref().map(|comment|
+                view! {
+                    <div>
+                        <div class="feature-documentation" inner_html={markdown_to_html(comment)}></div>
+                        <br/>
+                    </div>
+                }
+            )}
+            {data.clone().definition.map(|definition|
+                view! {
+                    <div class="data-summary">
+                        {definition.fields.iter()
+                            .map(|field| {
+                                view! {
+                                    <div class="badge-row">
+                                        <span class="data-badge input">{&field.clone().name}</span>
+                                        {&field.clone().validator.map(|validator| {
+                                            struct TypeBadge {
+                                                name: String,
+                                                italics: bool,
+                                            }
+                                            
+                                            let base_type = validator.clone();
+                                            let type_name = match validator.as_str() {
+                                                "°0type" => TypeBadge {
+                                                    name: "number array".to_string(),
+                                                    italics: true,
+                                                },
+                                                "°1type" => TypeBadge {
+                                                    name: "complex array".to_string(),
+                                                    italics: true,
+                                                },
+                                                "°2type" => TypeBadge {
+                                                    name: "box array".to_string(),
+                                                    italics: true,
+                                                },
+                                                "°3type" => TypeBadge {
+                                                    name: "complex array".to_string(),
+                                                    italics: true,
+                                                },
+                                                _ => TypeBadge {
+                                                    name: base_type.clone(),
+                                                    italics: false,
+                                                },
+                                            };
+                                            let class = match type_name.italics {
+                                                true => "data-badge type italics",
+                                                false => "data-badge type",
+                                            };
+                                            
+                                            view! {
+                                                <span class={class.to_string()}>{type_name.name}</span>
+                                            }
+                                        }).collect_view()}
+                                    </div>
+                                }
+                            })
+                            .collect_view()
+                        }
+                    </div>
+                }
+            )}
         </div>
     }
 }
