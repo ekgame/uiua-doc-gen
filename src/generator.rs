@@ -5,7 +5,7 @@ use leptos::{component, view, CollectView, HtmlElement, IntoView};
 use leptos::html::{Div, Template};
 use leptos::html::StringOrView::View;
 use thiserror::Error;
-use crate::extractor::{BindingDefinition, BindingType, CodeMacroDefinition, ConstantDefinition, DataDefinition, FunctionDefinition, IndexMacroDefinition, ItemContent, ModuleDefinition, NamedSignature, SignatureInfo};
+use crate::extractor::{BindingDefinition, BindingType, CodeMacroDefinition, ConstantDefinition, DataDefinition, FunctionDefinition, IndexMacroDefinition, ItemContent, ModuleDefinition, NamedSignature, SignatureInfo, VariantDefinition};
 use crate::summarizer::{ContentItems, DocumentationSummary, RenderingContent, RenderingItem};
 
 #[derive(Error, Debug)]
@@ -170,6 +170,7 @@ fn generate_content_item(parent_module: Option<String>, item: &ItemContent) -> H
         ItemContent::Binding(binding) => generate_binding_item(parent_module, binding),
         ItemContent::Module(module ) => generate_module_item(parent_module, module),
         ItemContent::Data(data) => generate_data_item(parent_module, data),
+        ItemContent::Variant(variant) => generate_variant_item(parent_module, variant),
         _ => view! {
             <div class="panel">{format!("{:?}", item)}</div>
         },
@@ -187,14 +188,14 @@ fn generate_binding_item(parent_module: Option<String>, item: &BindingDefinition
 
 fn generate_constant_item(parent_module: Option<String>, item: &BindingDefinition, constant: &ConstantDefinition) -> HtmlElement<Div> {
     let constant_name = match parent_module {
-        Some(parent) => format!("{}~{}", parent, item.name.clone()),
+        Some(parent) => format!("{}~&#x200B;{}", parent, item.name.clone()),
         None => item.name.clone(),
     };
     
     view! {
         <div class="panel">
             <h3 class="mono">
-                {constant_name} " " <span class="badge">constant</span>
+                <span inner_html={constant_name}></span> " " <span class="badge">constant</span>
             </h3>
             {constant.value.as_ref().map(|value| view! {
                 <details>
@@ -248,7 +249,7 @@ fn generate_named_signature_item(signature: Option<SignatureInfo>, named_signatu
 
 fn generate_function_item(parent_module: Option<String>, item: &BindingDefinition, function: &FunctionDefinition) -> HtmlElement<Div> {
     let function_name = match parent_module {
-        Some(parent) => format!("{}~{}", parent, item.name.clone()),
+        Some(parent) => format!("{}~&#x200B;{}", parent, item.name.clone()),
         None => item.name.clone(),
     };
     
@@ -264,7 +265,7 @@ fn generate_function_item(parent_module: Option<String>, item: &BindingDefinitio
     view! {
         <div class="panel">
             <h3 class={format!("mono {}", title_color)}>
-                {function_name} " " <span class="badge">function</span>
+                <span inner_html={function_name}></span> " " <span class="badge">function</span>
             </h3>
         
             {generate_named_signature_item(Some(function.signature.clone()), function.named_signature.clone())}
@@ -284,7 +285,7 @@ fn generate_function_item(parent_module: Option<String>, item: &BindingDefinitio
 
 fn generate_index_macro_item(parent_module: Option<String>, item: &BindingDefinition, index_macro: &IndexMacroDefinition) -> HtmlElement<Div> {
     let macro_name = match parent_module {
-        Some(parent) => format!("{}~{}", parent, item.name.clone()),
+        Some(parent) => format!("{}~&#x200B;{}", parent, item.name.clone()),
         None => item.name.clone(),
     };
     
@@ -297,7 +298,7 @@ fn generate_index_macro_item(parent_module: Option<String>, item: &BindingDefini
     view! {
         <div class="panel">
             <h3 class={format!("mono {}", title_color)}>
-                {macro_name} " " <span class="badge">index macro</span>
+                <span inner_html={macro_name.clone()}></span> " " <span class="badge">index macro</span>
             </h3>
         
             {generate_named_signature_item(None, index_macro.named_signature.clone())}
@@ -318,14 +319,14 @@ fn generate_index_macro_item(parent_module: Option<String>, item: &BindingDefini
 
 fn generate_code_macro_item(parent_module: Option<String>, item: &BindingDefinition, index_macro: &CodeMacroDefinition) -> HtmlElement<Div> {
     let macro_name = match parent_module {
-        Some(parent) => format!("{}~{}", parent, item.name.clone()),
+        Some(parent) => format!("{}~&#x200B;{}", parent, item.name.clone()),
         None => item.name.clone(),
     };
     
     view! {
         <div class="panel">
             <h3 class="mono monadic-modifier">
-                {macro_name} " " <span class="badge">code macro</span>
+                <span inner_html={macro_name.clone()}></span> " " <span class="badge">code macro</span>
             </h3>
 
             {generate_named_signature_item(None, index_macro.named_signature.clone())}
@@ -346,13 +347,13 @@ fn generate_code_macro_item(parent_module: Option<String>, item: &BindingDefinit
 
 fn generate_module_item(parent_module: Option<String>, module: &ModuleDefinition) -> HtmlElement<Div> {
     let module_name = match parent_module {
-        Some(parent) => format!("{}~{}", parent, module.name.clone()),
+        Some(parent) => format!("{}~&#x200B;{}", parent, module.name.clone()),
         None => module.name.clone(),
     };
     
     view! {
         <div class="panel">
-            <h3 class="mono module">{module_name.clone()} " " <span class="badge">module</span></h3>
+            <h3 class="mono module"><span inner_html={module_name.clone()}></span> " " <span class="badge">module</span></h3>
             {module.comment.as_ref().map(|comment|
                 view! {
                     <div class="feature-documentation" inner_html={markdown_to_html(comment)}></div>
@@ -370,7 +371,7 @@ fn generate_module_item(parent_module: Option<String>, module: &ModuleDefinition
 fn generate_data_item(parent_module: Option<String>, data: &DataDefinition) -> HtmlElement<Div> {
     let data_name = match parent_module {
         Some(parent) => match &data.name {
-            Some(name) => format!("{}~{}", parent, name),
+            Some(name) => format!("{}~&#x200B;{}", parent, name),
             None => parent.clone(),
         }
         None => match &data.name {
@@ -381,8 +382,8 @@ fn generate_data_item(parent_module: Option<String>, data: &DataDefinition) -> H
     
     view! {
         <div class="panel">
-            <h3 class="mono">
-                {data_name} " " <span class="badge">data</span> " " {
+            <h3 class="mono module">
+                <span inner_html={data_name}></span> " " <span class="badge">data</span> " " {
                     if let Some(definition) = &data.definition {
                         match definition.boxed {
                             true => view! { <span class="badge">boxed</span> },
@@ -395,10 +396,7 @@ fn generate_data_item(parent_module: Option<String>, data: &DataDefinition) -> H
             </h3>
             {data.clone().comment.as_ref().map(|comment|
                 view! {
-                    <div>
-                        <div class="feature-documentation" inner_html={markdown_to_html(comment)}></div>
-                        <br/>
-                    </div>
+                    <div class="feature-documentation" inner_html={markdown_to_html(comment)}></div>
                 }
             )}
             {data.clone().definition.map(|definition|
@@ -451,6 +449,50 @@ fn generate_data_item(parent_module: Option<String>, data: &DataDefinition) -> H
                                 }
                             })
                             .collect_view()
+                        }
+                    </div>
+                }
+            )}
+        </div>
+    }
+}
+
+fn generate_variant_item(parent_module: Option<String>, data: &VariantDefinition) -> HtmlElement<Div> {
+    let variant_name = match parent_module {
+        Some(parent) => format!("{}~&#x200B;{}", parent, data.name.clone()),
+        None => data.name.clone(),
+    };
+    
+    view! {
+        <div class="panel">
+            <h3 class="mono module">
+                <span inner_html={variant_name}></span> " " <span class="badge">variant</span> " " {
+                    if let Some(definition) = &data.definition {
+                        match definition.boxed {
+                            true => view! { <span class="badge">boxed</span> },
+                            false => view! { <span class="badge">unboxed</span> },
+                        }
+                    } else {
+                        view! { <span class="badge">no values</span> }
+                    }
+                }
+            </h3>
+            {data.clone().comment.as_ref().map(|comment|
+                view! {
+                    <div class="feature-documentation" inner_html={markdown_to_html(comment)}></div>
+                }
+            )}
+            {data.clone().definition.map(|definition|
+                view! {
+                    <div class="data-summary variant">
+                        {definition.fields.iter()
+                            .map(|field| {
+                                view! {
+                                    <div class="badge-row">
+                                        <span class="data-badge input">{field.clone().name}</span>
+                                    </div>
+                                }
+                            }).collect_view()
                         }
                     </div>
                 }

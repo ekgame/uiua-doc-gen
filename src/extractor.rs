@@ -81,6 +81,7 @@ pub struct DataDefinition {
 #[derive(Debug, Clone)]
 pub struct VariantDefinition {
     pub name: String,
+    pub comment: Option<String>,
     pub definition: Option<Definition>,
 }
 
@@ -288,6 +289,7 @@ fn handle_ast_items(items: Vec<Item>, asm: &Assembly) -> Vec<ItemContent> {
                 let item_content = if data_def.variant {
                     ItemContent::Variant(VariantDefinition {
                         name: data_def.name.map(|name| name.value.to_string()).unwrap(),
+                        comment: info.and_then(|info| info.comment.clone().map(|comment| comment.text.to_string())),
                         definition,
                     })
                 } else {

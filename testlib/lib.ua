@@ -108,6 +108,16 @@ F‼! ← ^1^2^3
 # Test macro 5
 Enum! ←^ ⍚($"_ ← $_ _\n".) :⇡⧻.⍚(⊂∩°□)°⊂
 
+┌─╴TestModule
+  # Variant without fields.
+  |Variant
+  # Variant unboxed with fields.
+  |AnotherVariant [This Ones Unboxed]
+  
+  # Variant boxed with fields.
+  |ThirdVariant {Boxed This Time}
+└─╴
+
 # Test module description.
 ┌─╴TestModule
 

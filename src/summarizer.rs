@@ -454,6 +454,9 @@ fn summarize_data(items: &Vec<ItemContent>) -> Option<Vec<ItemContent>> {
         if let ItemContent::Data(_) = item {
             return true;
         }
+        if let ItemContent::Variant(_) = item {
+            return true;
+        }
         false
     }).collect::<Vec<_>>();
     

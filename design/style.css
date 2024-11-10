@@ -204,6 +204,12 @@ code {
     margin-bottom: 1em;
     font-family: Uiua386, monospace;
 
+    &.variant {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 0.75em;
+    }
+
     .data-badge {
         color: black;
         padding: 0.25em 0.5em;
@@ -380,4 +386,8 @@ table td code {
 
 .italics {
     font-style: italic;
+}
+
+.feature-documentation + .data-summary {
+    margin-top: 1em;
 }
