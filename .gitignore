@@ -1,3 +1,5 @@
 /target
 /testlib/uiua-modules
 /testlib/doc-site
+.vscode
+.idea
