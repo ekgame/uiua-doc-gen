@@ -1,5 +1,5 @@
 [package]
-name = "uiua-docs-generator"
+name = "uiua-doc-gen"
 version = "0.14.0" # Major/minor version matches supported version of Uiua, patch is for the generator itself
 edition = "2021"
 

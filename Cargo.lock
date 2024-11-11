@@ -3942,7 +3942,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "uiua-docs-generator"
+name = "uiua-doc-gen"
 version = "0.14.0"
 dependencies = [
  "clap",
