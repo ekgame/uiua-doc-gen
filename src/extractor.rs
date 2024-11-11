@@ -86,11 +86,13 @@ pub struct VariantDefinition {
 }
 
 #[derive(Debug, Clone)]
+#[allow(unused)]
 pub struct ImportDefinition {
     path: String,
 }
 
 #[derive(Debug, Clone)]
+#[allow(unused)]
 pub enum ItemContent {
     Words {
         code: String
@@ -134,6 +136,7 @@ pub enum BindingType {
 }
 
 #[derive(Debug)]
+#[allow(unused)]
 pub struct FileContent {
     pub main: bool,
     pub file: String,
@@ -232,7 +235,7 @@ fn handle_ast_items(items: Vec<Item>, asm: &Assembly) -> Vec<ItemContent> {
                         arguments: code_macro_args,
                         named_signature: signature.map(signature_comment_to_struct),
                     }),
-                    BindingKind::CodeMacro(code_macro_args) => BindingType::CodeMacro(CodeMacroDefinition {
+                    BindingKind::CodeMacro(_) => BindingType::CodeMacro(CodeMacroDefinition {
                         named_signature: signature.map(signature_comment_to_struct),
                     }),
                     _ => continue,

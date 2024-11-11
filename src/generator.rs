@@ -1,12 +1,11 @@
 use std::fs::{create_dir_all, remove_dir};
 use std::path::PathBuf;
 use kuchiki::traits::TendrilSink;
-use leptos::{component, view, CollectView, HtmlElement, IntoView};
-use leptos::html::{Div, Template};
-use leptos::html::StringOrView::View;
+use leptos::{view, CollectView, HtmlElement, IntoView};
+use leptos::html::Div;
 use thiserror::Error;
 use crate::extractor::{BindingDefinition, BindingType, CodeMacroDefinition, ConstantDefinition, DataDefinition, FunctionDefinition, IndexMacroDefinition, ItemContent, ModuleDefinition, NamedSignature, SignatureInfo, VariantDefinition};
-use crate::summarizer::{ContentItems, DocumentationSummary, RenderingContent, RenderingItem};
+use crate::summarizer::{DocumentationSummary, RenderingContent, RenderingItem};
 
 #[derive(Error, Debug)]
 pub enum GenerationError {}

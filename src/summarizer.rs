@@ -43,6 +43,7 @@ pub enum SectionType {
 }
 
 #[derive(Debug, Clone)]
+#[allow(unused)]
 pub struct DocumentationSection {
     pub title: String,
     pub section_type: SectionType,
