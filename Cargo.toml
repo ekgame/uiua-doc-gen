@@ -1,12 +1,12 @@
 [package]
 name = "uiua-docs-generator"
-version = "0.14.0"
+version = "0.14.0" # Major/minor version matches supported version of Uiua, patch is for the generator itself
 edition = "2021"
 
 [dependencies]
-uiua = { path = "../uiua" }
+uiua = "0.14.0-dev.1"
 clap = "4.5.20"
-thiserror = "1.0.65"
+thiserror = "2.0.3"
 same-file = "1.0.6"
 leptos = { version = "0.6.15", features = ["serde", "csr"] }
 kuchiki = "0.8.1"
