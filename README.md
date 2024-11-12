@@ -2,6 +2,8 @@
 
 This is a command line tool to generate documentation from your [Uiua](https://uiua.org/) libraries.
 
+![Demo image](assets/img.png)
+
 # Limitations
 
 This tool is still in development and has some limitations:
@@ -13,6 +15,7 @@ This tool is still in development and has some limitations:
 # Prerequisites
 
 - You need to have [Rust](https://www.rust-lang.org/) installed in your system.
+- Your library must have a single `lib.ua` file in the root of the project with all the declarations.
 
 # Usage
 1. Install the package globally:
@@ -26,3 +29,7 @@ This tool is still in development and has some limitations:
     ```
    
 3. The documentation will be generated in the `doc-site` folder.
+
+# Hosting on GitHub Pages
+
+The generated website is a static site, so you can host it on GitHub Pages. To do that, follow the steps in the [uiua-doc-gen-action repository](https://github.com/ekgame/uiua-doc-gen-action).
