@@ -80,6 +80,10 @@ Digits ← +@0⇡10
 # and the digits.
 Alphanumeric ← ⊂⊂ Alphabet ⌵Alphabet Digits
 
+Matrix ← °△3_3
+
+Num ← ℂ0 0
+
 # Noadic function test
 # This function does nothing.
 DoNothing ← ()
@@ -110,7 +114,7 @@ Enum! ←^ ⍚($"_ ← $_ _\n".) :⇡⧻.⍚(⊂∩°□)°⊂
 
 ┌─╴TestModule
   # Variant without fields.
-  |Variant
+  |Variant 
   # Variant unboxed with fields.
   |AnotherVariant [This Ones Unboxed]
   
@@ -120,16 +124,15 @@ Enum! ←^ ⍚($"_ ← $_ _\n".) :⇡⧻.⍚(⊂∩°□)°⊂
 
 # Test module description.
 ┌─╴TestModule
-
   # Test comment
   ~[Unnamed Data Definition]
-
+  
   # Test comment 2
   ~TestDataNotBoxed [Not Boxed]
-
+  
   # Test comment 3
   ~TestDataBoxed {Boxed Data}
-
+  
   # Test comment 4
   ~TestDataWithValidators {
     Boxed: °0type
@@ -139,7 +142,7 @@ Enum! ←^ ⍚($"_ ← $_ _\n".) :⇡⧻.⍚(⊂∩°□)°⊂
     StringType: °1⧻△
     MoreThanThreeType: °1>3
   }
-
+  
   ModuleFunction  ← ∘
   ModuleFunction₂ ← ∘
   

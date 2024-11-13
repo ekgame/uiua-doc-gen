@@ -1,28 +1,44 @@
 extern crate uiua;
 
+use same_file::is_same_file;
+use std::fmt;
 use std::fs::canonicalize;
+use std::path::Path;
 use std::path::PathBuf;
 use thiserror::Error;
-use uiua::ast::Item;
-use uiua::ast::ModuleKind;
-use uiua::ast::Word;
-use uiua::{Assembly, ParseError};
-use uiua::BindingInfo;
-use uiua::BindingKind;
-use uiua::CodeSpan;
-use uiua::Compiler;
-use uiua::DocCommentSig;
-use uiua::NativeSys;
-use uiua::Signature;
-use uiua::Sp;
-use uiua::SysBackend;
-use uiua::{parse, InputSrc};
-use same_file::is_same_file;
+
+use uiua::{
+    ast::{Item, ModuleKind, Word},
+    parse, Assembly, BindingInfo, BindingKind, CodeSpan, Compiler, DocCommentSig, InputSrc, NativeSys, ParseError, Signature, Sp, SysBackend,
+};
 
 #[derive(Debug, Clone)]
 pub struct SignatureInfo {
-    pub inputs: i32,
-    pub outputs: i32,
+    pub inputs: usize,
+    pub outputs: usize,
+}
+
+impl fmt::Display for SignatureInfo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.outputs == 1 {
+            write!(f, "|{}", self.inputs)
+        } else {
+            write!(f, "|{}.{}", self.inputs, self.outputs)
+        }
+    }
+}
+
+impl Colored for SignatureInfo {
+    fn color_class(&self) -> &'static str {
+        match self.inputs {
+            0 => "noadic",
+            1 => "monadic",
+            2 => "dyadic",
+            3 => "triadic",
+            4 => "tetradic",
+            _ => "",
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -52,11 +68,23 @@ pub struct BindingDefinition {
     pub kind: BindingType,
 }
 
+impl Documented for BindingDefinition {
+    fn comment(&self) -> Option<&str> {
+        self.comment.as_deref()
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct ModuleDefinition {
     pub name: String,
     pub comment: Option<String>,
     pub items: Vec<ItemContent>,
+}
+
+impl Documented for ModuleDefinition {
+    fn comment(&self) -> Option<&str> {
+        self.comment.as_deref()
+    }
 }
 
 impl ModuleDefinition {
@@ -78,11 +106,23 @@ pub struct DataDefinition {
     pub definition: Option<Definition>,
 }
 
+impl Documented for DataDefinition {
+    fn comment(&self) -> Option<&str> {
+        self.comment.as_deref()
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct VariantDefinition {
     pub name: String,
     pub comment: Option<String>,
     pub definition: Option<Definition>,
+}
+
+impl Documented for VariantDefinition {
+    fn comment(&self) -> Option<&str> {
+        self.comment.as_deref()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -94,9 +134,7 @@ pub struct ImportDefinition {
 #[derive(Debug, Clone)]
 #[allow(unused)]
 pub enum ItemContent {
-    Words {
-        code: String
-    },
+    Words { code: String },
 
     Binding(BindingDefinition),
     Module(ModuleDefinition),
@@ -122,6 +160,16 @@ pub struct IndexMacroDefinition {
     pub named_signature: Option<NamedSignature>,
 }
 
+impl Colored for IndexMacroDefinition {
+    fn color_class(&self) -> &'static str {
+        match self.arguments {
+            1 => "monadic-modifier",
+            2 => "dyadic-modifier",
+            _ => "triadic-modifier",
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct CodeMacroDefinition {
     pub named_signature: Option<NamedSignature>,
@@ -143,39 +191,42 @@ pub struct FileContent {
     pub items: Vec<ItemContent>,
 }
 
-fn signature_comment_to_struct(doc: DocCommentSig) -> NamedSignature {
-    let inputs = doc.args.iter()
-        .map(|input| input.name.to_string())
-        .collect();
-
-    let outputs = doc.outputs
-        .map(|outputs| outputs.iter()
-            .map(|output| output.name.to_string())
-            .collect())
-        .unwrap_or_default();
-
-    NamedSignature { inputs, outputs }
+pub trait Colored {
+    fn color_class(&self) -> &'static str;
 }
 
-fn format_signature(signature: Signature) -> SignatureInfo {
-    SignatureInfo {
-        inputs: signature.args as i32,
-        outputs: signature.outputs as i32,
+pub trait Documented {
+    fn comment(&self) -> Option<&str>;
+}
+
+impl From<DocCommentSig> for NamedSignature {
+    fn from(doc: DocCommentSig) -> Self {
+        let inputs = doc.args.iter().map(|input| input.name.to_string()).collect();
+
+        let outputs = doc
+            .outputs
+            .map(|outputs| outputs.iter().map(|output| output.name.to_string()).collect())
+            .unwrap_or_default();
+
+        NamedSignature { inputs, outputs }
+    }
+}
+
+impl From<Signature> for SignatureInfo {
+    fn from(sig: Signature) -> Self {
+        SignatureInfo {
+            inputs: sig.args,
+            outputs: sig.outputs,
+        }
     }
 }
 
 // Rest of the helper functions remain the same
 fn get_binding_info(asm: &Assembly, span: &CodeSpan) -> Option<BindingInfo> {
-    for binding in &asm.bindings {
-        if binding.span != *span {
-            continue;
-        }
-        return Some(binding.clone());
-    }
-    None
+    asm.bindings.iter().find(|binding| binding.span == *span).cloned()
 }
 
-fn get_words_as_code_2(words: &Vec<Vec<Sp<Word>>>, asm: &Assembly) -> String {
+fn get_words_as_code_2(words: &[Vec<Sp<Word>>], asm: &Assembly) -> String {
     if words.first().unwrap().is_empty() {
         return "".to_string();
     }
@@ -190,7 +241,7 @@ fn get_words_as_code_2(words: &Vec<Vec<Sp<Word>>>, asm: &Assembly) -> String {
     span.as_str(&asm.inputs, |code| code.to_owned())
 }
 
-fn get_words_as_code(words: &Vec<Sp<Word>>, asm: &Assembly) -> String {
+fn get_words_as_code(words: &[Sp<Word>], asm: &Assembly) -> String {
     if words.is_empty() {
         return "".to_string();
     }
@@ -209,9 +260,7 @@ fn handle_ast_items(items: Vec<Item>, asm: &Assembly) -> Vec<ItemContent> {
             Item::Words(words) => {
                 let code_str = get_words_as_code_2(&words, asm).replace("\r\n", "\n");
                 for chunk in code_str.split("\n\n") {
-                    results.push(ItemContent::Words {
-                        code: chunk.to_string(),
-                    });
+                    results.push(ItemContent::Words { code: chunk.to_string() });
                 }
             }
             Item::Binding(binding) => {
@@ -225,23 +274,23 @@ fn handle_ast_items(items: Vec<Item>, asm: &Assembly) -> Vec<ItemContent> {
 
                 let kind = match info.kind {
                     BindingKind::Const(value) => BindingType::Const(ConstantDefinition {
-                        value: value.map(|v| v.to_string()),
+                        value: value.map(|v| v.show()),
                     }),
                     BindingKind::Func(function) => BindingType::Function(FunctionDefinition {
-                        signature: format_signature(function.sig),
-                        named_signature: signature.map(signature_comment_to_struct),
+                        signature: function.sig.into(),
+                        named_signature: signature.map(Into::into),
                     }),
                     BindingKind::IndexMacro(code_macro_args) => BindingType::IndexMacro(IndexMacroDefinition {
                         arguments: code_macro_args,
-                        named_signature: signature.map(signature_comment_to_struct),
+                        named_signature: signature.map(Into::into),
                     }),
                     BindingKind::CodeMacro(_) => BindingType::CodeMacro(CodeMacroDefinition {
-                        named_signature: signature.map(signature_comment_to_struct),
+                        named_signature: signature.map(Into::into),
                     }),
                     _ => continue,
                 };
 
-                results.push(ItemContent::Binding( BindingDefinition {
+                results.push(ItemContent::Binding(BindingDefinition {
                     name: binding.name.value.to_string(),
                     code,
                     public: info.public,
@@ -252,8 +301,7 @@ fn handle_ast_items(items: Vec<Item>, asm: &Assembly) -> Vec<ItemContent> {
             Item::Module(module) => {
                 if let ModuleKind::Test = module.value.kind {
                     continue;
-                }
-                else if let ModuleKind::Named(name) = module.value.kind {
+                } else if let ModuleKind::Named(name) = module.value.kind {
                     let info = match get_binding_info(asm, &name.span) {
                         Some(info) => info,
                         None => continue,
@@ -270,17 +318,18 @@ fn handle_ast_items(items: Vec<Item>, asm: &Assembly) -> Vec<ItemContent> {
                 }
             }
             Item::Data(data_def) => {
-                let definition = data_def.fields.map(|def| {
-                    Definition {
-                        boxed: def.boxed,
-                        fields: def.fields.iter().map(|field| Field {
+                let definition = data_def.fields.map(|def| Definition {
+                    boxed: def.boxed,
+                    fields: def
+                        .fields
+                        .iter()
+                        .map(|field| Field {
                             name: field.name.value.to_string(),
-                            validator: field.validator.as_ref()
-                                .map(|v| get_words_as_code(&v.words, asm)),
-                        }).collect(),
-                    }
+                            validator: field.validator.as_ref().map(|v| get_words_as_code(&v.words, asm)),
+                        })
+                        .collect(),
                 });
-                
+
                 let info = match &data_def.name {
                     Some(name) => match get_binding_info(asm, &name.span) {
                         Some(info) => Some(info),
@@ -292,13 +341,13 @@ fn handle_ast_items(items: Vec<Item>, asm: &Assembly) -> Vec<ItemContent> {
                 let item_content = if data_def.variant {
                     ItemContent::Variant(VariantDefinition {
                         name: data_def.name.map(|name| name.value.to_string()).unwrap(),
-                        comment: info.and_then(|info| info.comment.clone().map(|comment| comment.text.to_string())),
+                        comment: info.and_then(|info| info.comment.map(|comment| comment.text.to_string())),
                         definition,
                     })
                 } else {
                     ItemContent::Data(DataDefinition {
                         name: data_def.name.map(|name| name.value.to_string()),
-                        comment: info.and_then(|info| info.comment.clone().map(|comment| comment.text.to_string())),
+                        comment: info.and_then(|info| info.comment.map(|comment| comment.text.to_string())),
                         definition,
                     })
                 };
@@ -323,29 +372,28 @@ pub enum ExtractError {
 
     #[error("Failed to parse file: {0}")]
     ParseError(PathBuf, Sp<ParseError>),
-    
+
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
-    
+
     #[error("Uiua Error: {0}")]
     UiuaError(#[from] uiua::UiuaError),
 }
 
-pub fn extract_uiua_definitions(path: &PathBuf) -> Result<Vec<FileContent>, ExtractError> {
+pub fn extract_uiua_definitions(path: &Path) -> Result<Vec<FileContent>, ExtractError> {
     let lib_path = path.join("lib.ua");
     if !lib_path.exists() || !lib_path.is_file() {
         return Err(ExtractError::LibraryNotFound(lib_path));
     }
 
-    let backend = NativeSys::default();
+    let backend = NativeSys;
     let _ = backend.change_directory(path.to_str().unwrap());
 
     let mut comp = Compiler::with_backend(backend);
-    let asm = comp.load_file(lib_path.clone())?.finish();
+    let asm = comp.load_file(&lib_path)?.finish();
 
     let mut inputs = asm.inputs.clone();
-    let files: Vec<_> = inputs.files.iter()
-        .map(|file| (file.key().clone(), file.value().clone())).collect();
+    let files: Vec<_> = inputs.files.iter().map(|file| (file.key().clone(), file.value().clone())).collect();
 
     let mut output_files = Vec::new();
 

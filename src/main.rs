@@ -2,25 +2,25 @@ mod extractor;
 mod generator;
 mod summarizer;
 
+use crate::summarizer::summarize_content;
 use clap::Parser;
+use extractor::extract_uiua_definitions;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
 use thiserror::Error;
-use extractor::extract_uiua_definitions;
-use crate::summarizer::summarize_content;
 
 #[derive(Error, Debug)]
 enum AppError {
     #[error("Directory does not exist: {0}")]
     DirectoryNotFound(PathBuf),
-    
+
     #[error("Not a directory: {0}")]
     NotADirectory(PathBuf),
-    
+
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
-    
+
     #[error("Permission denied: {0}")]
     PermissionDenied(PathBuf),
 }
@@ -30,7 +30,7 @@ enum AppError {
 struct Cli {
     #[arg(short, long)]
     dir: Option<PathBuf>,
-    
+
     #[arg(short, long)]
     name: String,
 }
@@ -73,7 +73,7 @@ fn validate_directory(dir: Option<PathBuf>) -> Result<PathBuf, AppError> {
 
 fn main() {
     let cli = Cli::parse();
-    
+
     let working_dir = match validate_directory(cli.dir) {
         Ok(dir) => dir,
         Err(err) => {
