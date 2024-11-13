@@ -2,6 +2,7 @@ extern crate uiua;
 
 use same_file::is_same_file;
 use std::fmt;
+use std::fs::canonicalize;
 use std::path::Path;
 use std::path::PathBuf;
 use thiserror::Error;
@@ -394,25 +395,29 @@ pub fn extract_uiua_definitions(path: &Path) -> Result<Vec<FileContent>, Extract
     let mut inputs = asm.inputs.clone();
     let files: Vec<_> = inputs.files.iter().map(|file| (file.key().clone(), file.value().clone())).collect();
 
-    files
-        .into_iter()
-        .filter(|(path, _)| !path.starts_with("uiua-modules"))
-        .map(|(path, content)| {
-            let full_path = path.canonicalize().unwrap();
-            let src = InputSrc::File(full_path.clone().into());
-            let (items, errors, _) = parse(&content, src, &mut inputs);
+    let mut output_files = Vec::new();
 
-            if let Some(err) = errors.first() {
-                return Err(ExtractError::ParseError(full_path, err.clone()));
-            }
+    for (file_path, file_content) in files {
+        if file_path.starts_with("uiua-modules") {
+            continue;
+        }
 
-            let file_content = FileContent {
-                main: is_same_file(&full_path, &lib_path)?,
-                file: full_path.to_string_lossy().into_owned(),
-                items: handle_ast_items(items, &asm),
-            };
+        let full_file_path = canonicalize(&file_path).unwrap();
+        let src = InputSrc::File(file_path.clone().into());
+        let (items, errors, _) = parse(&file_content, src, &mut inputs);
 
-            Ok(file_content)
-        })
-        .collect()
+        if !errors.is_empty() {
+            return Err(ExtractError::ParseError(full_file_path, errors[0].clone()));
+        }
+
+        let file_content = FileContent {
+            main: is_same_file(&full_file_path, &lib_path)?,
+            file: full_file_path.to_string_lossy().into_owned(),
+            items: handle_ast_items(items, &asm),
+        };
+
+        output_files.push(file_content);
+    }
+
+    Ok(output_files)
 }
