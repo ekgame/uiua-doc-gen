@@ -1,9 +1,9 @@
-use std::option::Option;
-use markup5ever::namespace_url;
-use markup5ever::{local_name, ns, QualName};
+use crate::extractor::{BindingDefinition, BindingType, FileContent, ItemContent, ModuleDefinition};
 use kuchiki::traits::TendrilSink;
 use kuchiki::NodeRef;
-use crate::extractor::{BindingType, FileContent, ItemContent, ModuleDefinition};
+use markup5ever::namespace_url;
+use markup5ever::{local_name, ns, QualName};
+use std::option::Option;
 
 #[derive(Debug, Clone)]
 pub struct Title {
@@ -62,30 +62,33 @@ pub fn summarize_content(content: &FileContent, title: String) -> DocumentationS
     if let Some(documentation) = summarize_doc_comments(content) {
         sections.push(documentation);
     }
-    
+
     if let Some(modules) = summarize_modules(&content.items) {
         sections.push(DocumentationSection {
             title: "Modules".to_owned(),
             section_type: SectionType::Modules,
-            content: modules.iter().map(|item| {
-                if let ItemContent::Module(module) = item {
-                    RenderingItem {
-                        links: vec![],
-                        content: RenderingContent::Items(ContentItems {
-                            title: Title {
-                                title: module.name.clone(),
-                                link_id: module.name.clone(),
-                            },
-                            items: vec![item.clone()],
-                        }),
+            content: modules
+                .iter()
+                .map(|item| {
+                    if let ItemContent::Module(module) = item {
+                        RenderingItem {
+                            links: vec![],
+                            content: RenderingContent::Items(ContentItems {
+                                title: Title {
+                                    title: module.name.clone(),
+                                    link_id: module.name.clone(),
+                                },
+                                items: vec![item.clone()],
+                            }),
+                        }
+                    } else {
+                        panic!("Expected module item");
                     }
-                } else {
-                    panic!("Expected module item");
-                }
-            }).collect(),
+                })
+                .collect(),
         });
     }
-    
+
     if let Some(bindings) = summarize_bindings(&content.items) {
         sections.push(DocumentationSection {
             title: "Bindings".to_owned(),
@@ -107,7 +110,7 @@ fn summarize_doc_comments(content: &FileContent) -> Option<DocumentationSection>
     }
 
     let mut items = Vec::new();
-    items.extend(doc_comments.iter().map(summarize_doc_comment));
+    items.extend(doc_comments.iter().map(|comment| summarize_doc_comment(comment)));
 
     if items.is_empty() {
         return None;
@@ -120,16 +123,15 @@ fn summarize_doc_comments(content: &FileContent) -> Option<DocumentationSection>
     })
 }
 
-fn summarize_doc_comment(comment: &String) -> RenderingItem {
+fn summarize_doc_comment(comment: &str) -> RenderingItem {
     let mut links = Vec::new();
 
-    let html = markdown::to_html_with_options(
-        comment.as_str(),
-        &markdown::Options::gfm()
-    ).expect("Unable to convert markdown to HTML");
+    let html = markdown::to_html_with_options(comment, &markdown::Options::gfm()).expect("Unable to convert markdown to HTML");
 
     let document = kuchiki::parse_html().from_utf8().one(html.as_bytes());
-    document.select("h1, h2, h3, h4, h5, h6").unwrap()
+    document
+        .select("h1, h2, h3, h4, h5, h6")
+        .unwrap()
         .collect::<Vec<_>>()
         .into_iter()
         .for_each(|element| {
@@ -143,17 +145,14 @@ fn summarize_doc_comment(comment: &String) -> RenderingItem {
                 _ => local_name!("h6"),
             };
 
-            let new_header = NodeRef::new_element(
-                QualName::new(None, ns!(html), new_level.clone()),
-                None,
-            );
+            let new_header = NodeRef::new_element(QualName::new(None, ns!(html), new_level.clone()), None);
 
             new_header.append(NodeRef::new_text(element.text_contents()));
 
             if new_level.to_string() == "h2" {
                 let title = element.text_contents();
-                let id = title.to_lowercase().replace(" ", "-");
-                new_header.as_element().unwrap().attributes.borrow_mut().insert("id", id.clone().into());
+                let id = title.to_lowercase().replace(' ', "-");
+                new_header.as_element().unwrap().attributes.borrow_mut().insert("id", id.clone());
                 links.push(ItemLink {
                     title,
                     url: format!("#{}", id),
@@ -168,9 +167,7 @@ fn summarize_doc_comment(comment: &String) -> RenderingItem {
     let mut result = Vec::new();
     document.serialize(&mut result).unwrap();
     let rendered_comment = String::from_utf8(result).unwrap();
-    let cleaned_comment = rendered_comment
-        .replace("<html><head></head><body>", "")
-        .replace("</body></html>", "");
+    let cleaned_comment = rendered_comment.replace("<html><head></head><body>", "").replace("</body></html>", "");
 
     RenderingItem {
         links,
@@ -178,30 +175,34 @@ fn summarize_doc_comment(comment: &String) -> RenderingItem {
     }
 }
 
-fn extract_doc_comments(items: &Vec<ItemContent>) -> Vec<String> {
-    items.iter().filter_map(|item| {
-        if let ItemContent::Words { code } = item {
-            if code.starts_with("# !doc") {
-                let comment = code.lines()
-                    .map(|line| line.trim_start_matches("# !doc").trim_start_matches("#").trim())
-                    .collect::<Vec<&str>>()
-                    .join("\n")
-                    .trim()
-                    .to_owned();
-                return Some(comment);
+fn extract_doc_comments(items: &[ItemContent]) -> Vec<String> {
+    items
+        .iter()
+        .filter_map(|item| {
+            if let ItemContent::Words { code } = item {
+                if code.starts_with("# !doc") {
+                    let comment = code
+                        .lines()
+                        .map(|line| line.trim_start_matches("# !doc").trim_start_matches('#').trim())
+                        .collect::<Vec<&str>>()
+                        .join("\n")
+                        .trim()
+                        .to_owned();
+                    return Some(comment);
+                }
             }
-        }
-        None
-    }).collect()
+            None
+        })
+        .collect()
 }
 
-fn summarize_bindings(items: &Vec<ItemContent>) -> Option<Vec<RenderingItem>> {
+fn summarize_bindings(items: &[ItemContent]) -> Option<Vec<RenderingItem>> {
     let mut results = Vec::new();
-    
+
     if let Some(item) = summarize_constants(items) {
         results.push(item);
     }
-    
+
     if let Some(data) = summarize_data(items) {
         results.push(RenderingItem {
             links: vec![],
@@ -214,7 +215,7 @@ fn summarize_bindings(items: &Vec<ItemContent>) -> Option<Vec<RenderingItem>> {
             }),
         });
     }
-    
+
     if let Some(macros) = summarize_code_macros(items) {
         results.push(RenderingItem {
             links: vec![],
@@ -227,7 +228,7 @@ fn summarize_bindings(items: &Vec<ItemContent>) -> Option<Vec<RenderingItem>> {
             }),
         });
     }
-    
+
     if let Some(macros) = summarize_index_macros(items) {
         results.push(RenderingItem {
             links: vec![],
@@ -240,7 +241,7 @@ fn summarize_bindings(items: &Vec<ItemContent>) -> Option<Vec<RenderingItem>> {
             }),
         });
     }
-    
+
     if let Some(functions) = summarize_functions(items, 0) {
         results.push(RenderingItem {
             links: vec![],
@@ -331,24 +332,27 @@ fn summarize_bindings(items: &Vec<ItemContent>) -> Option<Vec<RenderingItem>> {
             }),
         });
     }
-    
+
     Some(results)
 }
 
-fn summarize_constants(items: &Vec<ItemContent>) -> Option<RenderingItem> {
-    let constants = items.iter().filter(|item| {
-        if let ItemContent::Binding(binding) = item {
-            if let BindingType::Const(_) = &binding.kind {
-                return binding.public;
+fn summarize_constants(items: &[ItemContent]) -> Option<RenderingItem> {
+    let constants = items
+        .iter()
+        .filter(|item| {
+            if let ItemContent::Binding(binding) = item {
+                if let BindingType::Const(_) = &binding.kind {
+                    return binding.public;
+                }
             }
-        }
-        false
-    }).collect::<Vec<_>>();
-    
+            false
+        })
+        .collect::<Vec<_>>();
+
     if constants.is_empty() {
         return None;
     }
-    
+
     Some(RenderingItem {
         links: vec![],
         content: RenderingContent::Items(ContentItems {
@@ -361,109 +365,133 @@ fn summarize_constants(items: &Vec<ItemContent>) -> Option<RenderingItem> {
     })
 }
 
-fn summarize_functions(items: &Vec<ItemContent>, num_inputs: i32) -> Option<Vec<ItemContent>> {
-    let functions = items.iter().filter(|item| {
-        if let ItemContent::Binding(binding) = item {
-            if let BindingType::Function(function) = &binding.kind {
-                if function.signature.inputs == num_inputs {
-                    return binding.public;
+fn summarize_functions(items: &[ItemContent], num_inputs: usize) -> Option<Vec<ItemContent>> {
+    let functions = items
+        .iter()
+        .filter(|item| {
+            if let ItemContent::Binding(binding) = item {
+                if let BindingType::Function(function) = &binding.kind {
+                    if function.signature.inputs == num_inputs {
+                        return binding.public;
+                    }
                 }
             }
-        }
-        false
-    }).collect::<Vec<_>>();
-    
+            false
+        })
+        .collect::<Vec<_>>();
+
     if functions.is_empty() {
         return None;
     }
-    
+
     Some(functions.iter().map(|item| (*item).clone()).collect())
 }
 
-fn summarize_index_macros(items: &Vec<ItemContent>) -> Option<Vec<ItemContent>> {
-    let macros = items.iter().filter(|item| {
-        if let ItemContent::Binding(binding) = item {
-            if let BindingType::IndexMacro(_) = &binding.kind {
-                return binding.public;
+fn summarize_index_macros(items: &[ItemContent]) -> Option<Vec<ItemContent>> {
+    let macros = items
+        .iter()
+        .filter(|item| {
+            if let ItemContent::Binding(binding) = item {
+                if let BindingType::IndexMacro(_) = &binding.kind {
+                    return binding.public;
+                }
             }
-        }
-        false
-    }).collect::<Vec<_>>();
-    
+            false
+        })
+        .collect::<Vec<_>>();
+
     if macros.is_empty() {
         return None;
     }
-    
+
     Some(macros.iter().map(|item| (*item).clone()).collect())
 }
 
-fn summarize_code_macros(items: &Vec<ItemContent>) -> Option<Vec<ItemContent>> {
-    let macros = items.iter().filter(|item| {
-        if let ItemContent::Binding(binding) = item {
-            if let BindingType::CodeMacro(_) = &binding.kind {
-                return binding.public;
+fn summarize_code_macros(items: &[ItemContent]) -> Option<Vec<ItemContent>> {
+    let macros = items
+        .iter()
+        .filter(|item| {
+            if let ItemContent::Binding(BindingDefinition {
+                public,
+                kind: BindingType::CodeMacro(_),
+                ..
+            }) = item
+            {
+                *public
+            } else {
+                false
             }
-        }
-        false
-    }).collect::<Vec<_>>();
-    
-    if macros.is_empty() {
-        return None;
+        })
+        .cloned()
+        .collect::<Vec<_>>();
+
+    if !macros.is_empty() {
+        Some(macros)
+    } else {
+        None
     }
-    
-    Some(macros.iter().map(|item| (*item).clone()).collect())
 }
 
-fn summarize_modules(items: &Vec<ItemContent>) -> Option<Vec<ItemContent>> {
-    let modules = items.iter().filter(|item| {
-        if let ItemContent::Module(module) = item {
-            return module.has_public_items();
-        }
-        false
-    }).collect::<Vec<_>>();
-    
+fn summarize_modules(items: &[ItemContent]) -> Option<Vec<ItemContent>> {
+    let modules = items
+        .iter()
+        .filter(|item| {
+            if let ItemContent::Module(module) = item {
+                module.has_public_items()
+            } else {
+                false
+            }
+        })
+        .collect::<Vec<_>>();
+
     if modules.is_empty() {
         return None;
     }
-    
-    Some(modules.iter().map(|item| ItemContent::Module(ModuleDefinition {
-        name: match item {
-            ItemContent::Module(module) => module.name.clone(),
-            _ => panic!("Expected module item"),
-        },
-        items: match item {
-            ItemContent::Module(module) => module.items.iter().filter(|item| {
-                match item {
-                    ItemContent::Binding(binding) => binding.public,
-                    ItemContent::Module(module) => module.has_public_items(),
-                    ItemContent::Variant(_) => true,
-                    ItemContent::Data(_) => true,
-                    _ => false,
-                }
-            }).map(|item| item.clone()).collect(),
-            _ => panic!("Expected module item"),
-        },
-        comment: match item {
-            ItemContent::Module(module) => module.comment.clone(),
-            _ => None,
-        },
-    })).collect())
+
+    Some(
+        modules
+            .iter()
+            .map(|item| {
+                ItemContent::Module(ModuleDefinition {
+                    name: match item {
+                        ItemContent::Module(module) => module.name.clone(),
+                        _ => panic!("Expected module item"),
+                    },
+                    items: match item {
+                        ItemContent::Module(module) => module
+                            .items
+                            .iter()
+                            .filter(|item| match item {
+                                ItemContent::Binding(binding) => binding.public,
+                                ItemContent::Module(module) => module.has_public_items(),
+                                ItemContent::Variant(_) => true,
+                                ItemContent::Data(_) => true,
+                                _ => false,
+                            })
+                            .cloned()
+                            .collect(),
+                        _ => panic!("Expected module item"),
+                    },
+                    comment: match item {
+                        ItemContent::Module(module) => module.comment.clone(),
+                        _ => None,
+                    },
+                })
+            })
+            .collect(),
+    )
 }
 
-fn summarize_data(items: &Vec<ItemContent>) -> Option<Vec<ItemContent>> {
-    let data = items.iter().filter(|item| {
-        if let ItemContent::Data(_) = item {
-            return true;
-        }
-        if let ItemContent::Variant(_) = item {
-            return true;
-        }
-        false
-    }).collect::<Vec<_>>();
-    
-    if data.is_empty() {
-        return None;
+fn summarize_data(items: &[ItemContent]) -> Option<Vec<ItemContent>> {
+    let data = items
+        .iter()
+        .filter(|item| matches!(item, ItemContent::Data(_) | ItemContent::Variant(_)))
+        .cloned()
+        .collect::<Vec<_>>();
+
+    if !data.is_empty() {
+        Some(data)
+    } else {
+        None
     }
-    
-    Some(data.iter().map(|item| (*item).clone()).collect())
 }
