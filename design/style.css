@@ -9,7 +9,7 @@
     --light-gray: #2B2B2B;
     --mauve: #5c162e;
     --red: #e4496d;
-    --white: #cccccc;;
+    --white: #c1c1c1;
 
     --color-background: var(--gray);
     --color-sidebar-background: var(--dark-gray);
@@ -21,6 +21,7 @@
     --color-text: var(--white);
     --color-text-link: var(--red);
     --color-badge: var(--mauve);
+    --color-summary: #9B9B9B;
 
     --sidebar-width: 250px;
 }
@@ -91,8 +92,12 @@ a {
     padding: 1em;
     margin-bottom: 1em;
 
-    & > * {
-        margin: 0;
+    & > *:first-child {
+        margin-top: 0;
+    }
+
+    & > *:last-child {
+        margin-bottom: 0;
     }
 
     h2 {
@@ -125,6 +130,11 @@ a {
     display: flex;
     flex-direction: column;
     gap: 0.5em;
+
+    & > * {
+        margin-top: 0;
+        margin-bottom: 0;
+    }
 }
 
 .feature-documentation {
@@ -156,13 +166,13 @@ a {
 code {
     font-family: Uiua386, monospace;
     background-color: var(--color-separator);
-    padding: 0.25em 0.5em;
+    padding: 0 0.5em;
     border-radius: 5px;
 }
 
 .literal-value, .source-code, pre > code {
     display: flex;
-    padding: 1em;
+    padding: 0.5em 1em;
     background-color: var(--color-separator);
     font-family: Uiua386, monospace;
     overflow: auto;
@@ -198,7 +208,6 @@ code {
     display: flex;
     flex-direction: column;
     gap: 0.75em;
-    margin-bottom: 1em;
     font-family: Uiua386, monospace;
 
     &.variant {
@@ -383,4 +392,8 @@ table td code {
 
 .italics {
     font-style: italic;
+}
+
+summary {
+    color: var(--color-summary);
 }
