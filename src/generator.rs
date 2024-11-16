@@ -20,7 +20,9 @@ pub enum GenerationError {}
 
 pub fn generate_documentation_site(directory: &Path, summary: DocumentationSummary) -> Result<(), GenerationError> {
     let output_directory = directory.join("doc-site");
-    remove_dir_all(output_directory.clone()).expect("Unable to remove existing output directory");
+    if output_directory.exists() {
+        remove_dir_all(output_directory.clone()).expect("Unable to remove existing output directory");
+    }
     create_dir_all(output_directory.clone()).expect("Unable to create output directory");
 
     let mut mangler = FilenameMangler::new();
