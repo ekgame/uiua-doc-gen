@@ -31,11 +31,11 @@ impl fmt::Display for SignatureInfo {
 impl Colored for SignatureInfo {
     fn color_class(&self) -> &'static str {
         match self.inputs {
-            0 => "noadic",
-            1 => "monadic",
-            2 => "dyadic",
-            3 => "triadic",
-            4 => "tetradic",
+            0 => "noadic-function",
+            1 => "monadic-function",
+            2 => "dyadic-function",
+            3 => "triadic-function",
+            4 => "tetradic-function",
             _ => "",
         }
     }

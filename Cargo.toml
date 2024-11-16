@@ -19,6 +19,7 @@ markdown = "1.0.0-alpha.21"
 html5ever = "0.29.0"
 markup5ever = "0.10.1"
 rand = "0.8.5"
+unicode-segmentation = "1.12.0"
 
 [profile.dev]
 opt-level = 1

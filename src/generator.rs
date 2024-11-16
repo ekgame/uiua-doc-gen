@@ -1,3 +1,4 @@
+use crate::formatter::format_source_code;
 use crate::{
     extractor::{
         BindingDefinition, BindingType, CodeMacroDefinition, Colored, ConstantDefinition, DataDefinition, Definition, Documented, Field,
@@ -29,12 +30,15 @@ pub fn generate_documentation_site(directory: &Path, summary: DocumentationSumma
         mangler.mangle_filename("style.css".as_ref()),
         include_bytes!("../design/style.css"),
     );
+
     save_static_file(
         &output_directory,
         mangler.mangle_filename("script.js".as_ref()),
         include_bytes!("../design/script.js"),
     );
+
     save_static_file(&output_directory, "Uiua386.ttf".parse().unwrap(), include_bytes!("../design/Uiua386.ttf"));
+
     save_static_file(
         &output_directory,
         "index.html".parse().unwrap(),
@@ -197,7 +201,7 @@ fn generate_content(summary: &DocumentationSummary) -> impl IntoView {
     summary
         .sections
         .iter()
-        .map(|section| section.content.iter().map(generate_rendering_item).collect_view())
+        .map(|section| section.content.iter().map(|item| generate_rendering_item(item)).collect_view())
         .collect_view()
 }
 
@@ -307,6 +311,8 @@ fn generate_named_signature_item(signature: Option<SignatureInfo>, named_signatu
 }
 
 fn generate_function_item(parent_module: Option<String>, item: &BindingDefinition, function: &FunctionDefinition) -> HtmlElement<Div> {
+    let source_code = format_source_code(&item.code);
+
     view! {
         <div class="panel feature">
             <h3 class="mono">
@@ -323,13 +329,15 @@ fn generate_function_item(parent_module: Option<String>, item: &BindingDefinitio
 
             <details>
                 <summary>"Source code"</summary>
-                <code class="source-code">{&item.code}</code>
+                <code class="source-code" inner_html=source_code></code>
             </details>
         </div>
     }
 }
 
 fn generate_index_macro_item(parent_module: Option<String>, item: &BindingDefinition, index_macro: &IndexMacroDefinition) -> HtmlElement<Div> {
+    let source_code = format_source_code(&item.code);
+
     view! {
         <div class="panel feature">
             <h3 class="mono">
@@ -343,13 +351,15 @@ fn generate_index_macro_item(parent_module: Option<String>, item: &BindingDefini
 
             <details>
                 <summary>"Source code"</summary>
-                <code class="source-code">{item.clone().code}</code>
+                <code class="source-code" inner_html=source_code></code>
             </details>
         </div>
     }
 }
 
 fn generate_code_macro_item(parent_module: Option<String>, item: &BindingDefinition, index_macro: &CodeMacroDefinition) -> HtmlElement<Div> {
+    let source_code = format_source_code(&item.code);
+
     view! {
         <div class="panel feature">
             <h3 class="mono">
@@ -363,7 +373,7 @@ fn generate_code_macro_item(parent_module: Option<String>, item: &BindingDefinit
 
             <details>
                 <summary>"Source code"</summary>
-                <code class="source-code">{&item.code}</code>
+                <code class="source-code" inner_html=source_code></code>
             </details>
         </div>
     }

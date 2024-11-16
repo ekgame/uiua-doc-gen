@@ -3955,6 +3955,7 @@ dependencies = [
  "same-file",
  "thiserror 2.0.3",
  "uiua",
+ "unicode-segmentation",
 ]
 
 [[package]]

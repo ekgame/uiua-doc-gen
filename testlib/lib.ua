@@ -100,6 +100,18 @@ Identity ← ∘
 # result ? input
 Capitalize ← ⍣(⍜⊢⌵|∘)
 
+# Extract words from an arbitrary string.
+# Mostly used to transform strings to different formats.
+# boxedArray ? string
+ExtractWords ← (
+  # Replace non-alphanumeric characters with spaces
+  ⍜▽(⋅@\s)⊸(¬∈Alphanumeric)
+  # Insert a space in word boundries
+  ⍜⊜∘≡(⊂⊂:" "°⊟)⦷[1 0]≠⌵..
+  # Split words by spaces
+  ⊜(□¯⌵)≠" ".
+)
+
 # Test macro
 F! ← ^1
 

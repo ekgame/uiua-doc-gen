@@ -1,4 +1,5 @@
 mod extractor;
+mod formatter;
 mod generator;
 mod summarizer;
 
@@ -107,5 +108,5 @@ fn main() {
         std::process::exit(1);
     }
 
-    // println!("Generated the documentation.")
+    println!("Generated the documentation.")
 }
