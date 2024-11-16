@@ -3943,7 +3943,7 @@ dependencies = [
 
 [[package]]
 name = "uiua-doc-gen"
-version = "0.14.2"
+version = "0.14.3"
 dependencies = [
  "clap",
  "html5ever 0.29.0",
