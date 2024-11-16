@@ -90,20 +90,14 @@ a {
     background-color: var(--color-panel);
     padding: 1em;
     margin-bottom: 1em;
-}
 
-.panel h2 {
-    border-bottom: 1px solid var(--color-separator);
-    padding-bottom: 0.5em;
-}
-
-.panel {
-    & > *:first-child {
-        margin-top: 0;
+    & > * {
+        margin: 0;
     }
 
-    & > *:last-child {
-        margin-bottom: 0;
+    h2 {
+        border-bottom: 1px solid var(--color-separator);
+        padding-bottom: 0.5em;
     }
 }
 
@@ -127,9 +121,13 @@ a {
     }
 }
 
-.feature-documentation {
-    margin-top: 1em;
+.feature {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+}
 
+.feature-documentation {
     & > *:first-child {
         margin-top: 0;
     }
@@ -175,7 +173,6 @@ code {
     display: flex;
     flex-wrap: wrap;
     gap: 1em;
-    margin-bottom: 1em;
     font-family: Uiua386, monospace;
 
     .summary-badge {
@@ -386,8 +383,4 @@ table td code {
 
 .italics {
     font-style: italic;
-}
-
-.feature-documentation + .data-summary {
-    margin-top: 1em;
 }

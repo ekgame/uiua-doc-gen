@@ -54,7 +54,9 @@ fn generate_html(summary: DocumentationSummary) -> String {
 }
 
 fn markdown_to_html(markdown: &str) -> String {
-    markdown::to_html_with_options(markdown, &markdown::Options::gfm()).expect("Unable to convert markdown to HTML").replace('\n', "<br/>")
+    markdown::to_html_with_options(markdown, &markdown::Options::gfm())
+        .expect("Unable to convert markdown to HTML")
+        .replace('\n', "<br/>")
 }
 
 fn generate_page(summary: DocumentationSummary) -> impl IntoView {
@@ -63,9 +65,9 @@ fn generate_page(summary: DocumentationSummary) -> impl IntoView {
         <html lang="en">
             <head>
                 <title>{&summary.title}</title>
-                <meta charset="utf-8"/>
-                <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-                <link rel="stylesheet" href="style.css"/>
+                <meta charset="utf-8" />
+                <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                <link rel="stylesheet" href="style.css" />
                 <script src="script.js"></script>
             </head>
             <body>
@@ -79,9 +81,7 @@ fn generate_page(summary: DocumentationSummary) -> impl IntoView {
                         <h1>{&summary.title}</h1>
                     </div>
                     <div class="container">
-                        <div class="sidebar">
-                            {generate_sidebar(&summary)}
-                        </div>
+                        <div class="sidebar">{generate_sidebar(&summary)}</div>
                         <div class="content">
                             <div class="content-wrapper">
                                 <h1 class="mobile-hidden">{&summary.title}</h1>
@@ -104,23 +104,36 @@ fn generate_sidebar(summary: &DocumentationSummary) -> impl IntoView {
                 <div class="sidebar-section">
                     <div class="section-name">{&section.title}</div>
                     <ul>
-                        {section.content.iter()
+                        {section
+                            .content
+                            .iter()
                             .flat_map(|item| &item.links)
-                            .map(|link| view! { <li><a href={&link.url}>{&link.title}</a></li> })
-                            .collect_view()
-                        }
-                        {section.content.iter()
-                            .filter(|item| matches!(&item.content, RenderingContent::Items(_)))
-                            .map(|link|
-                                match &link.content {
-                                    RenderingContent::Items(items) => view! {
-                                        <li><a href={format!("#{}", &items.title.link_id)}>{&items.title.title}</a></li>
-                                    },
-                                    _ => view! { <li>"N/A"</li> }
+                            .map(|link| {
+                                view! {
+                                    <li>
+                                        <a href=&link.url>{&link.title}</a>
+                                    </li>
                                 }
-                            )
-                            .collect_view()
-                        }
+                            })
+                            .collect_view()}
+                        {section
+                            .content
+                            .iter()
+                            .filter(|item| matches!(&item.content, RenderingContent::Items(_)))
+                            .map(|link| match &link.content {
+                                RenderingContent::Items(items) => {
+                                    view! {
+                                        <li>
+                                            <a href=format!(
+                                                "#{}",
+                                                &items.title.link_id,
+                                            )>{&items.title.title}</a>
+                                        </li>
+                                    }
+                                }
+                                _ => view! { <li>"N/A"</li> },
+                            })
+                            .collect_view()}
                     </ul>
                 </div>
             }
@@ -138,16 +151,11 @@ fn generate_content(summary: &DocumentationSummary) -> impl IntoView {
 
 fn generate_rendering_item(item: &RenderingItem) -> impl IntoView {
     match &item.content {
-        RenderingContent::RenderedDocumentation(ref content) => view! {
-            <div class="panel" inner_html={content}></div>
-        },
+        RenderingContent::RenderedDocumentation(ref content) => view! { <div class="panel" inner_html=content></div> },
         RenderingContent::Items(ref item) => view! {
             <div>
-                <h2 id={&item.title.link_id}>{&item.title.title}</h2>
-                {item.items.iter()
-                    .map(|item| generate_content_item(None, item))
-                    .collect_view()
-                }
+                <h2 id=&item.title.link_id>{&item.title.title}</h2>
+                {item.items.iter().map(|item| generate_content_item(None, item)).collect_view()}
             </div>
         },
     }
@@ -173,26 +181,36 @@ fn generate_binding_item(parent_module: Option<String>, item: &BindingDefinition
 }
 
 fn module_qualifier(module: String) -> View {
-    view! { <span class="module">{module}</span><span>"~"</span> }.into()
+    view! {
+        <span class="module">{module}</span>
+        <span>"~"</span>
+    }
+    .into()
 }
 
 fn documentation(item: &impl Documented) -> impl IntoView {
-    item.comment().map(|comment| view! { <div class="feature-documentation" inner_html={markdown_to_html(comment)}/> })
+    item.comment()
+        .map(|comment| view! { <div class="feature-documentation" inner_html=markdown_to_html(comment) /> })
 }
 
 fn generate_constant_item(parent_module: Option<String>, item: &BindingDefinition, constant: &ConstantDefinition) -> HtmlElement<Div> {
     view! {
-        <div class="panel">
+        <div class="panel feature">
             <h3 class="mono">
-                {parent_module.clone().map(module_qualifier)}
-                <span inner_html={&item.name}></span> " " <span class="badge">"constant"</span>
+                {parent_module.clone().map(module_qualifier)} <span inner_html=&item.name></span>
+                " " <span class="badge">"constant"</span>
             </h3>
-            {constant.value.as_ref().map(|value| view! {
-                <details>
-                    <summary>"Literal value"</summary>
-                    <code class="literal-value">{value}</code>
-                </details>
-            })}
+            {constant
+                .value
+                .as_ref()
+                .map(|value| {
+                    view! {
+                        <details>
+                            <summary>"Literal value"</summary>
+                            <code class="literal-value">{value}</code>
+                        </details>
+                    }
+                })}
             {documentation(item)}
         </div>
     }
@@ -206,96 +224,110 @@ fn generate_named_signature_item(signature: Option<SignatureInfo>, named_signatu
     };
 
     view! {
-        <div class=format!("function-summary {}", hidden)>
-            {signature.map(|signature|
-                view! {
-                    <span class="summary-badge signature">{format!("{signature}")}</span>
-                }
-            )}
-            {named_signature.map(|signature|
-                view! {
-                    {signature.outputs.iter().map(|output|
-                        view! { <span class="summary-badge output">{output}</span> }
-                    ).collect_view()}
-                    "?"
-                    {signature.inputs.iter().map(|input|
-                        view! { <span class="summary-badge input">{input}</span> }
-                    ).collect_view()}
-                }
-            )}
+        <div class=format!(
+            "function-summary {}",
+            hidden,
+        )>
+            {signature
+                .map(|signature| {
+                    view! { <span class="summary-badge signature">{format!("{signature}")}</span> }
+                })}
+            {named_signature
+                .map(|signature| {
+                    view! {
+                        {signature
+                            .outputs
+                            .iter()
+                            .map(|output| {
+                                view! { <span class="summary-badge output">{output}</span> }
+                            })
+                            .collect_view()}
+                        "?"
+                        {signature
+                            .inputs
+                            .iter()
+                            .map(|input| view! { <span class="summary-badge input">{input}</span> })
+                            .collect_view()}
+                    }
+                })}
         </div>
     }
 }
 
 fn generate_function_item(parent_module: Option<String>, item: &BindingDefinition, function: &FunctionDefinition) -> HtmlElement<Div> {
     view! {
-        <div class="panel">
+        <div class="panel feature">
             <h3 class="mono">
                 {parent_module.map(module_qualifier)}
-                <span class={function.signature.color_class()}>{&item.name}</span> " " <span class="badge">"function"</span>
+                <span class=function.signature.color_class()>{&item.name}</span> " "
+                <span class="badge">"function"</span>
             </h3>
 
-            {generate_named_signature_item(Some(function.signature.clone()), function.named_signature.clone())}
+            {generate_named_signature_item(
+                Some(function.signature.clone()),
+                function.named_signature.clone(),
+            )}
+            {documentation(item)}
 
             <details>
                 <summary>"Source code"</summary>
                 <code class="source-code">{&item.code}</code>
             </details>
-            {documentation(item)}
         </div>
     }
 }
 
 fn generate_index_macro_item(parent_module: Option<String>, item: &BindingDefinition, index_macro: &IndexMacroDefinition) -> HtmlElement<Div> {
     view! {
-        <div class="panel">
+        <div class="panel feature">
             <h3 class="mono">
                 {parent_module.map(module_qualifier)}
-                <span class={index_macro.color_class()}>{&item.name}</span> " " <span class="badge">"index macro"</span>
+                <span class=index_macro.color_class()>{&item.name}</span> " "
+                <span class="badge">"index macro"</span>
             </h3>
 
             {generate_named_signature_item(None, index_macro.named_signature.clone())}
+            {documentation(item)}
 
             <details>
                 <summary>"Source code"</summary>
                 <code class="source-code">{item.clone().code}</code>
             </details>
-
-            {documentation(item)}
         </div>
     }
 }
 
 fn generate_code_macro_item(parent_module: Option<String>, item: &BindingDefinition, index_macro: &CodeMacroDefinition) -> HtmlElement<Div> {
     view! {
-        <div class="panel">
+        <div class="panel feature">
             <h3 class="mono">
                 {parent_module.map(module_qualifier)}
-                <span class="monadic-modifier">{&item.name}</span> " " <span class="badge">"code macro"</span>
+                <span class="monadic-modifier">{&item.name}</span> " "
+                <span class="badge">"code macro"</span>
             </h3>
 
             {generate_named_signature_item(None, index_macro.named_signature.clone())}
+            {documentation(item)}
 
             <details>
                 <summary>"Source code"</summary>
                 <code class="source-code">{&item.code}</code>
             </details>
-
-            {documentation(item)}
         </div>
     }
 }
 
 fn generate_module_item(parent_module: Option<String>, module: &ModuleDefinition) -> HtmlElement<Div> {
     view! {
-        <div class="panel">
+        <div class="panel feature">
             <h3 class="mono">
-                {parent_module.map(module_qualifier)}
-                <span class="module">{&module.name}</span> " " <span class="badge">"module"</span>
+                {parent_module.map(module_qualifier)} <span class="module">{&module.name}</span> " "
+                <span class="badge">"module"</span>
             </h3>
             {documentation(module)}
-            <br/>
-            {module.items
+            <br />
+            {module
+                .items
                 .iter()
                 .map(|item| generate_content_item(Some(module.name.clone()), item))
                 .collect_view()}
@@ -320,75 +352,80 @@ fn generate_data_item(parent_module: Option<String>, data: &DataDefinition) -> H
         view! {
             <div class="badge-row">
                 <span class="data-badge input">{&field.clone().name}</span>
-                {&field.validator.clone().map(|validator| {
-                    let (name, italics) = match validator.as_str() {
-                        "°0type" => ("number array".into(), true),
-                        "°1type" => ("complex array".into(), true),
-                        "°2type" => ("box array".into(), true),
-                        "°3type" => ("complex array".into(), true),
-                        _ => (None, false),
-                    };
+                {&field
+                    .validator
+                    .clone()
+                    .map(|validator| {
+                        let (name, italics) = match validator.as_str() {
+                            "°0type" => ("number array".into(), true),
+                            "°1type" => ("complex array".into(), true),
+                            "°2type" => ("box array".into(), true),
+                            "°3type" => ("complex array".into(), true),
+                            _ => (None, false),
+                        };
+                        let italics = if italics { "italics" } else { "" };
+                        let name = if let Some(name) = name { name.to_string() } else { validator };
 
-                    let italics = if italics { "italics" } else { "" };
-
-                    let name = if let Some(name) = name {
-                        name.to_string()
-                    } else {
-                        validator
-                    };
-
-                    view! {
-                        <span class={format!("data-badge type {}", italics)}>{name}</span>
-                    }
-                }).collect_view()}
+                        view! { <span class=format!("data-badge type {}", italics)>{name}</span> }
+                    })
+                    .collect_view()}
             </div>
         }
         .into_view()
     }
 
     view! {
-        <div class="panel">
+        <div class="panel feature">
             <h3 class="mono">
                 {parent_module.map(module_qualifier)}
-                <span class="module">{data.name.clone().unwrap_or_default()}</span> " " <span class="badge">"data"</span> " "
+                <span class="module">{data.name.clone().unwrap_or_default()}</span> " "
+                <span class="badge">"data"</span> " "
                 <span class="badge">{box_description(data.definition.as_ref())}</span>
             </h3>
             {documentation(data)}
-            {data.definition.as_ref().map(|definition|
-                view! {
-                    <div class="data-summary">
-                        {definition.fields.iter().map(badge_row).collect_view()}
-                    </div>
-                }
-            )}
+            {data
+                .definition
+                .as_ref()
+                .map(|definition| {
+                    view! {
+                        <div class="data-summary">
+                            {definition.fields.iter().map(badge_row).collect_view()}
+                        </div>
+                    }
+                })}
         </div>
     }
 }
 
 fn generate_variant_item(parent_module: Option<String>, data: &VariantDefinition) -> HtmlElement<Div> {
     view! {
-        <div class="panel">
+        <div class="panel feature">
             <h3 class="mono">
-                {parent_module.map(module_qualifier)}
-                <span class="module">{&data.name}</span> " " <span class="badge">"variant"</span> " "
+                {parent_module.map(module_qualifier)} <span class="module">{&data.name}</span> " "
+                <span class="badge">"variant"</span> " "
                 <span class="badge">{box_description(data.definition.as_ref())}</span>
             </h3>
             {documentation(data)}
-            {data.definition.as_ref().map(|definition|
-                view! {
-                    <div class="data-summary variant">
-                        {definition.fields.iter()
-                            .map(|field| {
-                                view! {
-                                    <div class="badge-row">
-                                        <span class="data-badge input">{&field.name}</span>
-                                    </div>
-                                }
-                            }).collect_view()
-                        }
-                    </div>
-                }
-            )}
+            {data
+                .definition
+                .as_ref()
+                .map(|definition| {
+                    view! {
+                        <div class="data-summary variant">
+                            {definition
+                                .fields
+                                .iter()
+                                .map(|field| {
+                                    view! {
+                                        <div class="badge-row">
+                                            <span class="data-badge input">{&field.name}</span>
+                                        </div>
+                                    }
+                                })
+                                .collect_view()}
+                        </div>
+                    }
+                })}
         </div>
     }
 }
