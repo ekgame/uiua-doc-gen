@@ -3951,6 +3951,7 @@ dependencies = [
  "leptos",
  "markdown",
  "markup5ever 0.10.1",
+ "rand 0.8.5",
  "same-file",
  "thiserror 2.0.3",
  "uiua",

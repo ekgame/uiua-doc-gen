@@ -7,8 +7,11 @@ use crate::{
 };
 use kuchiki::traits::TendrilSink;
 use leptos::{html::Div, view, CollectView, HtmlElement, IntoView, View};
-use std::fs::{create_dir_all, remove_dir};
-use std::path::Path;
+use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
+use std::collections::HashMap;
+use std::fs::{create_dir_all, remove_dir_all};
+use std::path::{Path, PathBuf};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -16,24 +19,70 @@ pub enum GenerationError {}
 
 pub fn generate_documentation_site(directory: &Path, summary: DocumentationSummary) -> Result<(), GenerationError> {
     let output_directory = directory.join("doc-site");
-    remove_dir(output_directory.clone()).unwrap_or(());
+    remove_dir_all(output_directory.clone()).expect("Unable to remove existing output directory");
     create_dir_all(output_directory.clone()).expect("Unable to create output directory");
 
-    save_static_file(&output_directory, "style.css", include_bytes!("../design/style.css"));
-    save_static_file(&output_directory, "script.js", include_bytes!("../design/script.js"));
-    save_static_file(&output_directory, "Uiua386.ttf", include_bytes!("../design/Uiua386.ttf"));
-    save_static_file(&output_directory, "index.html", generate_html(summary).as_bytes());
+    let mut mangler = FilenameMangler::new();
+
+    save_static_file(
+        &output_directory,
+        mangler.mangle_filename("style.css".as_ref()),
+        include_bytes!("../design/style.css"),
+    );
+    save_static_file(
+        &output_directory,
+        mangler.mangle_filename("script.js".as_ref()),
+        include_bytes!("../design/script.js"),
+    );
+    save_static_file(&output_directory, "Uiua386.ttf".parse().unwrap(), include_bytes!("../design/Uiua386.ttf"));
+    save_static_file(
+        &output_directory,
+        "index.html".parse().unwrap(),
+        generate_html(summary, &mut mangler).as_bytes(),
+    );
 
     Ok(())
 }
 
-fn save_static_file(output_directory: &Path, file: &str, content: &[u8]) {
+struct FilenameMangler {
+    map: HashMap<PathBuf, PathBuf>,
+}
+
+impl FilenameMangler {
+    fn new() -> Self {
+        Self { map: HashMap::new() }
+    }
+
+    fn mangle_filename(&mut self, path: &Path) -> PathBuf {
+        let mut rng = thread_rng();
+        let random_string: String = (0..8).map(|_| rng.sample(Alphanumeric) as char).collect();
+
+        let mut new_filename = path.file_stem().unwrap().to_os_string();
+        new_filename.push(".");
+        new_filename.push(&random_string);
+        if let Some(ext) = path.extension() {
+            new_filename.push(".");
+            new_filename.push(ext);
+        }
+
+        let mangled_path = path.with_file_name(new_filename);
+        self.map.insert(path.to_path_buf(), mangled_path.clone());
+        mangled_path
+    }
+
+    fn get_mangled_filename(&self, original: &Path) -> Option<&PathBuf> {
+        self.map.get(original)
+    }
+}
+
+fn save_static_file(output_directory: &Path, file: PathBuf, content: &[u8]) {
     let destination = output_directory.join(file);
     std::fs::write(destination, content).expect("Unable to write static file");
 }
 
-fn generate_html(summary: DocumentationSummary) -> String {
-    let raw_output = leptos::ssr::render_to_string(|| generate_page(summary)).to_string();
+fn generate_html(summary: DocumentationSummary, mangler: &mut FilenameMangler) -> String {
+    let page_content = generate_page(summary, mangler);
+    let raw_output = leptos::ssr::render_to_string(|| page_content).to_string();
     let document = kuchiki::parse_html().from_utf8().one(raw_output.as_bytes());
 
     // Remove comments
@@ -59,7 +108,10 @@ fn markdown_to_html(markdown: &str) -> String {
         .replace('\n', "<br/>")
 }
 
-fn generate_page(summary: DocumentationSummary) -> impl IntoView {
+fn generate_page(summary: DocumentationSummary, mangler: &mut FilenameMangler) -> impl IntoView {
+    let stylesheet = mangler.get_mangled_filename("style.css".as_ref()).unwrap().to_str().unwrap().to_string();
+    let script = mangler.get_mangled_filename("script.js".as_ref()).unwrap().to_str().unwrap().to_string();
+
     view! {
         <!DOCTYPE html>
         <html lang="en">
@@ -67,8 +119,8 @@ fn generate_page(summary: DocumentationSummary) -> impl IntoView {
                 <title>{&summary.title}</title>
                 <meta charset="utf-8" />
                 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-                <link rel="stylesheet" href="style.css" />
-                <script src="script.js"></script>
+                <link rel="stylesheet" href=stylesheet />
+                <script src=script></script>
             </head>
             <body>
                 <div class="mobile-container">
