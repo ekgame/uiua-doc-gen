@@ -3881,9 +3881,9 @@ checksum = "2896d95c02a80c6d6a5d6e953d479f5ddf2dfdb6a244441010e373ac0fb88971"
 
 [[package]]
 name = "uiua"
-version = "0.14.0-dev.1"
+version = "0.14.0-dev.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0cb76120360bdeba287bf32288c75970adbf091918b44ab905d56dbc6774f531"
+checksum = "27e5bc91c7c95f5127db0b4f02ed7ae5cab37deec51d6dc438777b242edec8e4"
 dependencies = [
  "arboard",
  "bitflags 2.6.0",
@@ -3943,7 +3943,7 @@ dependencies = [
 
 [[package]]
 name = "uiua-doc-gen"
-version = "0.14.3"
+version = "0.14.4"
 dependencies = [
  "clap",
  "html5ever 0.29.0",

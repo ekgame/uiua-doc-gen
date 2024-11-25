@@ -54,7 +54,7 @@ fn sig_class(sig: Signature) -> &'static str {
     }
 }
 
-fn prim_sig_class(prim: Primitive, subscript: Option<usize>) -> &'static str {
+fn prim_sig_class(prim: Primitive, subscript: Option<i32>) -> &'static str {
     match prim {
         Primitive::Identity => "stack-function",
         prim if matches!(prim.class(), PrimClass::Stack | PrimClass::Debug) && prim.modifier_args().is_none() => "stack-function",
