@@ -201,8 +201,11 @@ pub trait Documented {
 
 impl From<DocCommentSig> for NamedSignature {
     fn from(doc: DocCommentSig) -> Self {
-        let inputs = doc.args.iter().map(|input| input.name.to_string()).collect();
-
+        let inputs = doc
+            .args
+            .map(|inputs| inputs.iter().map(|output| output.name.to_string()).collect())
+            .unwrap_or_default();
+        
         let outputs = doc
             .outputs
             .map(|outputs| outputs.iter().map(|output| output.name.to_string()).collect())
@@ -269,8 +272,8 @@ fn handle_ast_items(items: Vec<Item>, asm: &Assembly) -> Vec<ItemContent> {
                     None => continue,
                 };
                 let code = binding.span().as_str(&asm.inputs, |code| code.to_owned());
-                let comment = info.comment.clone().map(|comment| comment.text.to_string());
-                let signature = info.comment.and_then(|comment| comment.sig);
+                let comment = info.meta.comment.clone().map(|comment| comment.text.to_string());
+                let signature = info.meta.comment.and_then(|comment| comment.sig);
 
                 let kind = match info.kind {
                     BindingKind::Const(value) => BindingType::Const(ConstantDefinition {
@@ -307,7 +310,7 @@ fn handle_ast_items(items: Vec<Item>, asm: &Assembly) -> Vec<ItemContent> {
                         None => continue,
                     };
 
-                    let comment = info.comment.map(|comment| comment.text.to_string());
+                    let comment = info.meta.comment.map(|comment| comment.text.to_string());
                     let processed_items = handle_ast_items(module.value.items, asm);
 
                     results.push(ItemContent::Module(ModuleDefinition {
@@ -341,13 +344,13 @@ fn handle_ast_items(items: Vec<Item>, asm: &Assembly) -> Vec<ItemContent> {
                 let item_content = if data_def.variant {
                     ItemContent::Variant(VariantDefinition {
                         name: data_def.name.map(|name| name.value.to_string()).unwrap(),
-                        comment: info.and_then(|info| info.comment.map(|comment| comment.text.to_string())),
+                        comment: info.and_then(|info| info.meta.comment.map(|comment| comment.text.to_string())),
                         definition,
                     })
                 } else {
                     ItemContent::Data(DataDefinition {
                         name: data_def.name.map(|name| name.value.to_string()),
-                        comment: info.and_then(|info| info.comment.map(|comment| comment.text.to_string())),
+                        comment: info.and_then(|info| info.meta.comment.map(|comment| comment.text.to_string())),
                         definition,
                     })
                 };
