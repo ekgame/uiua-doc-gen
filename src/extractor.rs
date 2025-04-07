@@ -205,7 +205,7 @@ impl From<DocCommentSig> for NamedSignature {
             .args
             .map(|inputs| inputs.iter().map(|output| output.name.to_string()).collect())
             .unwrap_or_default();
-        
+
         let outputs = doc
             .outputs
             .map(|outputs| outputs.iter().map(|output| output.name.to_string()).collect())
@@ -320,43 +320,45 @@ fn handle_ast_items(items: Vec<Item>, asm: &Assembly) -> Vec<ItemContent> {
                     }));
                 }
             }
-            Item::Data(data_def) => {
-                let definition = data_def.fields.map(|def| Definition {
-                    boxed: def.boxed,
-                    fields: def
-                        .fields
-                        .iter()
-                        .map(|field| Field {
-                            name: field.name.value.to_string(),
-                            validator: field.validator.as_ref().map(|v| get_words_as_code(&v.words, asm)),
+            Item::Data(data_defs) => {
+                for data_def in &data_defs {
+                    let definition = data_def.fields.as_ref().map(|def| Definition {
+                        boxed: def.boxed,
+                        fields: def
+                            .fields
+                            .iter()
+                            .map(|field| Field {
+                                name: field.name.value.to_string(),
+                                validator: field.validator.as_ref().map(|v| get_words_as_code(&v.words, asm)),
+                            })
+                            .collect(),
+                    });
+
+                    let info = match &data_def.name {
+                        Some(name) => match get_binding_info(asm, &name.span) {
+                            Some(info) => Some(info),
+                            None => panic!("Data definition without binding info"),
+                        },
+                        None => None,
+                    };
+
+                    let item_content = if data_def.variant {
+                        ItemContent::Variant(VariantDefinition {
+                            name: data_def.name.as_ref().map(|name| name.value.to_string()).unwrap(),
+                            comment: info.and_then(|info| info.meta.comment.map(|comment| comment.text.to_string())),
+                            definition,
                         })
-                        .collect(),
-                });
+                    } else {
+                        ItemContent::Data(DataDefinition {
+                            name: data_def.name.as_ref().map(|name| name.value.to_string()),
+                            comment: info.and_then(|info| info.meta.comment.map(|comment| comment.text.to_string())),
+                            definition,
+                        })
+                    };
 
-                let info = match &data_def.name {
-                    Some(name) => match get_binding_info(asm, &name.span) {
-                        Some(info) => Some(info),
-                        None => panic!("Data definition without binding info"),
-                    },
-                    None => None,
-                };
-
-                let item_content = if data_def.variant {
-                    ItemContent::Variant(VariantDefinition {
-                        name: data_def.name.map(|name| name.value.to_string()).unwrap(),
-                        comment: info.and_then(|info| info.meta.comment.map(|comment| comment.text.to_string())),
-                        definition,
-                    })
-                } else {
-                    ItemContent::Data(DataDefinition {
-                        name: data_def.name.map(|name| name.value.to_string()),
-                        comment: info.and_then(|info| info.meta.comment.map(|comment| comment.text.to_string())),
-                        definition,
-                    })
-                };
-
-                results.push(item_content);
-            }
+                    results.push(item_content);
+                }
+           }
             Item::Import(import) => {
                 results.push(ItemContent::Import(ImportDefinition {
                     path: import.path.value.to_string(),
