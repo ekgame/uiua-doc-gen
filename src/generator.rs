@@ -111,7 +111,6 @@ fn generate_html(summary: DocumentationSummary, mangler: &mut FilenameMangler) -
 fn markdown_to_html(markdown: &str) -> String {
     markdown::to_html_with_options(markdown, &markdown::Options::gfm())
         .expect("Unable to convert markdown to HTML")
-        .replace('\n', "<br/>")
 }
 
 fn generate_page(summary: DocumentationSummary, mangler: &mut FilenameMangler) -> impl IntoView {

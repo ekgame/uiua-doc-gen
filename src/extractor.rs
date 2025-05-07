@@ -218,8 +218,8 @@ impl From<DocCommentSig> for NamedSignature {
 impl From<Signature> for SignatureInfo {
     fn from(sig: Signature) -> Self {
         SignatureInfo {
-            inputs: sig.args,
-            outputs: sig.outputs,
+            inputs: sig.args(),
+            outputs: sig.outputs(),
         }
     }
 }
@@ -229,19 +229,17 @@ fn get_binding_info(asm: &Assembly, span: &CodeSpan) -> Option<BindingInfo> {
     asm.bindings.iter().find(|binding| binding.span == *span).cloned()
 }
 
-fn get_words_as_code_2(words: &[Vec<Sp<Word>>], asm: &Assembly) -> String {
-    if words.first().unwrap().is_empty() {
-        return "".to_string();
+fn get_words_as_code_2(words: &Vec<Sp<Word>>, asm: &Assembly) -> Option<(String, u16, u16)> {
+    if words.is_empty() {
+        return None;
     }
 
-    if words.last().unwrap().is_empty() {
-        return "".to_string();
-    }
-
-    let from = &words.first().unwrap().first().unwrap().span;
-    let to = &words.last().unwrap().last().unwrap().span;
+    let from = &words.first().unwrap().span;
+    let to = &words.last().unwrap().span;
     let span = from.clone().merge(to.clone());
-    span.as_str(&asm.inputs, |code| code.to_owned())
+    let string = span.as_str(&asm.inputs, |code| code.to_owned());
+
+    Some((string.replace("\r\n", "\n"), from.end.line, to.end.line))
 }
 
 fn get_words_as_code(words: &[Sp<Word>], asm: &Assembly) -> String {
@@ -258,12 +256,22 @@ fn get_words_as_code(words: &[Sp<Word>], asm: &Assembly) -> String {
 fn handle_ast_items(items: Vec<Item>, asm: &Assembly) -> Vec<ItemContent> {
     let mut results = Vec::new();
 
+    let mut word_lines = Vec::<String>::new();
+    let mut last_line = 0;
+
     for item in items {
         match item {
             Item::Words(words) => {
-                let code_str = get_words_as_code_2(&words, asm).replace("\r\n", "\n");
-                for chunk in code_str.split("\n\n") {
-                    results.push(ItemContent::Words { code: chunk.to_string() });
+                if let Some((str, line_from, line_to)) = get_words_as_code_2(&words, asm) {
+                    if word_lines.is_empty() || line_from == (last_line + 1) {
+                        word_lines.push(str);
+                        last_line = line_to;
+                    } else {
+                        results.push(ItemContent::Words { code: word_lines.join("\n") });
+                        word_lines.clear();
+                        word_lines.push(str);
+                        last_line = line_to;
+                    }
                 }
             }
             Item::Binding(binding) => {
@@ -358,13 +366,17 @@ fn handle_ast_items(items: Vec<Item>, asm: &Assembly) -> Vec<ItemContent> {
 
                     results.push(item_content);
                 }
-           }
+            }
             Item::Import(import) => {
                 results.push(ItemContent::Import(ImportDefinition {
                     path: import.path.value.to_string(),
                 }));
             }
         }
+    }
+
+    if !word_lines.is_empty() {
+        results.push(ItemContent::Words { code: word_lines.join("\n") });
     }
 
     results

@@ -1,6 +1,6 @@
 use leptos::view;
 use leptos::*;
-use uiua::{NativeSys, PrimClass, Primitive, Signature, SpanKind, Spans};
+use uiua::{ast::Subscript, NativeSys, PrimClass, Primitive, Signature, SpanKind, Spans};
 use unicode_segmentation::UnicodeSegmentation;
 
 #[derive(Debug)]
@@ -44,7 +44,7 @@ fn modifier_class(margs: usize) -> &'static str {
 }
 
 fn sig_class(sig: Signature) -> &'static str {
-    match sig.args {
+    match sig.args() {
         0 => "noadic-function",
         1 => "monadic-function",
         2 => "dyadic-function",
@@ -54,7 +54,7 @@ fn sig_class(sig: Signature) -> &'static str {
     }
 }
 
-fn prim_sig_class(prim: Primitive, subscript: Option<i32>) -> &'static str {
+fn prim_sig_class(prim: Primitive, subscript: Option<Subscript>) -> &'static str {
     match prim {
         Primitive::Identity => "stack-function",
         prim if matches!(prim.class(), PrimClass::Stack | PrimClass::Debug) && prim.modifier_args().is_none() => "stack-function",

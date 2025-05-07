@@ -9,7 +9,7 @@ readme = "README.md"
 keywords = ["cli", "documentation", "generator", "uiua"]
 
 [dependencies]
-uiua = "0.15.1"
+uiua = "0.16.0-dev.2"
 clap = "4.5.20"
 thiserror = "2.0.3"
 same-file = "1.0.6"

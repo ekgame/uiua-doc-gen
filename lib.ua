@@ -188,3 +188,19 @@ Enum! ←^ ⍚($"_ ← $_ _\n".) :⇡⧻.⍚(⊂∩°□)°⊂
   StringType: °1⧻△
   MoreThanThreeType: °1>3
 }
+
+# Decomposed quadratic formula
+Quad ← (
+  Disc ← -⊃(××4⊙⋅∘)⋅°√
+  Right ← ⊟⊸¯ √ℂ0 Disc
+  Denom ← ×2
+  ÷⊃Denom(-⊃⋅∘Right)
+)
+
+F ← (
+  ┌─╴M
+    Incr ← +1
+  └─╴
+  ~Def [Foo X]
+  Def 4 M~Incr
+)
