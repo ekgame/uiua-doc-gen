@@ -109,8 +109,7 @@ fn generate_html(summary: DocumentationSummary, mangler: &mut FilenameMangler) -
 }
 
 fn markdown_to_html(markdown: &str) -> String {
-    markdown::to_html_with_options(markdown, &markdown::Options::gfm())
-        .expect("Unable to convert markdown to HTML")
+    markdown::to_html_with_options(markdown, &markdown::Options::gfm()).expect("Unable to convert markdown to HTML")
 }
 
 fn generate_page(summary: DocumentationSummary, mangler: &mut FilenameMangler) -> impl IntoView {
@@ -218,13 +217,14 @@ fn generate_rendering_item(item: &RenderingItem) -> impl IntoView {
     }
 }
 
-fn generate_content_item(parent_module: Option<String>, item: &ItemContent) -> HtmlElement<Div> {
+fn generate_content_item(parent_module: Option<String>, item: &ItemContent) -> Option<HtmlElement<Div>> {
     match item {
-        ItemContent::Binding(binding) => generate_binding_item(parent_module, binding),
-        ItemContent::Module(module) => generate_module_item(parent_module, module),
-        ItemContent::Data(data) => generate_data_item(parent_module, data),
-        ItemContent::Variant(variant) => generate_variant_item(parent_module, variant),
-        _ => view! { <div class="panel">{format!("{:?}", item)}</div> },
+        ItemContent::Binding(binding) => Some(generate_binding_item(parent_module, binding)),
+        ItemContent::Module(module) => Some(generate_module_item(parent_module, module)),
+        ItemContent::Data(data) => Some(generate_data_item(parent_module, data)),
+        ItemContent::Variant(variant) => Some(generate_variant_item(parent_module, variant)),
+        ItemContent::Words { .. } => None,
+        _ => Some(view! { <div class="panel">{format!("{:?}", item)}</div> }),
     }
 }
 

@@ -89,6 +89,7 @@ Num ← ℂ0 0
 DoNothing ← ()
 
 # Generate a random number between 0 and 1.
+# output ?
 GenerateRandom ← (⚂)
 
 # Monadic function test
@@ -105,7 +106,7 @@ Capitalize ← ⍣(⍜⊢⌵|∘)
 # boxedArray ? string
 ExtractWords ← (
   # Replace non-alphanumeric characters with spaces
-  ⍜▽(⋅@\s)⊸(¬∈Alphanumeric)
+  ⍜▽(⋅@\s)⊸(¬∊Alphanumeric)
   # Insert a space in word boundries
   ⍜⊜∘≡(⊂⊂:" "°⊟)⦷[1 0]≠⌵..
   # Split words by spaces
@@ -113,23 +114,23 @@ ExtractWords ← (
 )
 
 # Test macro
-F! ← ^1
+F! ← ^0
 
 # Test macro 2
-F‼ ← ^1^2
+F‼ ← ^0^1
 
 # Test macro 3
-F‼! ← ^1^2^3
+F‼! ← ^0^1^2
 
 # Test macro 5
 Enum! ←^ ⍚($"_ ← $_ _\n".) :⇡⧻.⍚(⊂∩°□)°⊂
 
 ┌─╴TestModule
   # Variant without fields.
-  |Variant 
+  |Variant
   # Variant unboxed with fields.
   |AnotherVariant [This Ones Unboxed]
-  
+
   # Variant boxed with fields.
   |ThirdVariant {Boxed This Time}
 └─╴
@@ -137,14 +138,14 @@ Enum! ←^ ⍚($"_ ← $_ _\n".) :⇡⧻.⍚(⊂∩°□)°⊂
 # Test module description.
 ┌─╴TestModule
   # Test comment
-  ~[Unnamed Data Definition]
-  
+  ~ [Unnamed Data Definition]
+
   # Test comment 2
   ~TestDataNotBoxed [Not Boxed]
-  
+
   # Test comment 3
   ~TestDataBoxed {Boxed Data}
-  
+
   # Test comment 4
   ~TestDataWithValidators {
     Boxed: °0type
@@ -154,12 +155,14 @@ Enum! ←^ ⍚($"_ ← $_ _\n".) :⇡⧻.⍚(⊂∩°□)°⊂
     StringType: °1⧻△
     MoreThanThreeType: °1>3
   }
-  
+
   ModuleFunction  ← ∘
   ModuleFunction₂ ← ∘
-  
+
   ┌─╴SubModule
+    # Docs for a sub-module function
     ModuleFunction  ← ∘
+    # Some more docs
     ModuleFunction₂ ← ∘
   └─╴
 └─╴
@@ -171,7 +174,7 @@ Enum! ←^ ⍚($"_ ← $_ _\n".) :⇡⧻.⍚(⊂∩°□)°⊂
 └─╴
 
 # Test comment
-~[Unnamed Data Definition]
+~ [Unnamed Data Definition]
 
 # Test comment 2
 ~TestDataNotBoxed [Not Boxed]
