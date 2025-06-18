@@ -1,6 +1,6 @@
 use leptos::view;
 use leptos::*;
-use uiua::{ast::Subscript, NativeSys, PrimClass, Primitive, Signature, SpanKind, Spans};
+use uiua::{NativeSys, PrimClass, Primitive, Signature, SpanKind, Spans, Subscript};
 use unicode_segmentation::UnicodeSegmentation;
 
 #[derive(Debug)]

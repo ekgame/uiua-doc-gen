@@ -6,10 +6,14 @@ use std::fs::canonicalize;
 use std::path::Path;
 use std::path::PathBuf;
 use thiserror::Error;
+use uiua::parse::ParseError;
+use uiua::Signature;
+use uiua::Sp;
+use uiua::SysBackend;
 
 use uiua::{
     ast::{Item, ModuleKind, Word},
-    parse, Assembly, BindingInfo, BindingKind, CodeSpan, Compiler, DocCommentSig, InputSrc, NativeSys, ParseError, Signature, Sp, SysBackend,
+    parse, Assembly, BindingInfo, BindingKind, CodeSpan, Compiler, DocCommentSig, InputSrc, NativeSys,
 };
 
 #[derive(Debug, Clone)]
