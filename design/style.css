@@ -449,3 +449,7 @@ summary {
 .strand-span {
     color: #fff8;
 }
+
+.output-error {
+    color: #f44;
+}

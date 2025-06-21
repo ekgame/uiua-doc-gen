@@ -1,8 +1,8 @@
 extern crate uiua;
 
-use leptos::server_fn::request::Req;
 use same_file::is_same_file;
 use std::fmt;
+use std::fs;
 use std::fs::canonicalize;
 use std::path::Path;
 use std::path::PathBuf;
@@ -11,11 +11,10 @@ use uiua::ast::DataDef;
 use uiua::parse::ParseError;
 use uiua::Signature;
 use uiua::Sp;
-use uiua::SysBackend;
 
 use uiua::{
     ast::{Item, ModuleKind, Word},
-    parse, Assembly, BindingInfo, BindingKind, CodeSpan, Compiler, DocCommentSig, InputSrc, NativeSys,
+    parse, Assembly, BindingInfo, BindingKind, CodeSpan, Compiler, DocCommentSig, InputSrc,
 };
 
 #[derive(Debug, Clone)]
@@ -233,7 +232,6 @@ pub enum BindingType {
     CodeMacro(CodeMacroDefinition),
 }
 
-#[derive(Debug)]
 #[allow(unused)]
 pub struct FileContent {
     pub main: bool,
@@ -333,20 +331,20 @@ fn reconsiliate_function_definition(
 
     let named_arguments = named_arguments.unwrap_or_default();
 
-    let named_required_arguments = named_arguments
-        .iter()
-        .filter(|arg| arg.required)
-        .map(|arg| arg.name.clone())
-        .collect();
-    
+    let named_required_arguments = named_arguments.iter().filter(|arg| arg.required).map(|arg| arg.name.clone()).collect();
+
     let named_optional_arguments = named_arguments
         .iter()
         .filter(|arg| !arg.required)
         .map(|arg| arg.name.clone())
         .collect::<Vec<_>>();
 
-    let required_inputs: Vec<FunctionArgument> = default_required_inputs.iter()
-        .zip(coerce_vector_length(named_signature.clone().unwrap_or_default().inputs, default_required_inputs.len()))
+    let required_inputs: Vec<FunctionArgument> = default_required_inputs
+        .iter()
+        .zip(coerce_vector_length(
+            named_signature.clone().unwrap_or_default().inputs,
+            default_required_inputs.len(),
+        ))
         .zip(coerce_vector_length(named_required_arguments, default_required_inputs.len()))
         .map(|((default, comment_name), field_name)| {
             if comment_name.is_none() && field_name.is_none() {
@@ -368,7 +366,8 @@ fn reconsiliate_function_definition(
         })
         .collect();
 
-    let optional_inputs: Vec<FunctionArgument> = named_optional_arguments.iter()
+    let optional_inputs: Vec<FunctionArgument> = named_optional_arguments
+        .iter()
         .map(|name| FunctionArgument {
             name: name.clone(),
             optional: true,
@@ -377,7 +376,8 @@ fn reconsiliate_function_definition(
         })
         .collect();
 
-    let outputs: Vec<FunctionOutput> = default_outputs.iter()
+    let outputs: Vec<FunctionOutput> = default_outputs
+        .iter()
         .zip(coerce_vector_length(named_signature.unwrap_or_default().outputs, default_outputs.len()))
         .map(|(default, field_name)| {
             if field_name.is_none() {
@@ -443,11 +443,9 @@ fn handle_ast_items(items: Vec<Item>, asm: &Assembly) -> Vec<ItemContent> {
                     BindingKind::Const(value) => BindingType::Const(ConstantDefinition {
                         value: value.map(|v| v.show()),
                     }),
-                    BindingKind::Func(function) => BindingType::Function(reconsiliate_function_definition(
-                        function.sig.into(),
-                        signature.map(Into::into),
-                        None,
-                    )),
+                    BindingKind::Func(function) => {
+                        BindingType::Function(reconsiliate_function_definition(function.sig.into(), signature.map(Into::into), None))
+                    }
                     BindingKind::IndexMacro(code_macro_args) => BindingType::IndexMacro(IndexMacroDefinition {
                         arguments: code_macro_args,
                         named_signature: signature.map(Into::into),
@@ -598,17 +596,15 @@ pub enum ExtractError {
     UiuaError(#[from] uiua::UiuaError),
 }
 
-pub fn extract_uiua_definitions(path: &Path) -> Result<Vec<FileContent>, ExtractError> {
+pub fn extract_uiua_definitions(path: &Path, compiler: &mut Compiler) -> Result<Vec<FileContent>, ExtractError> {
     let lib_path = path.join("lib.ua");
     if !lib_path.exists() || !lib_path.is_file() {
         return Err(ExtractError::LibraryNotFound(lib_path));
     }
 
-    let backend = NativeSys;
-    let _ = backend.change_directory(path.to_str().unwrap());
-
-    let mut comp = Compiler::with_backend(backend);
-    let asm = comp.load_file(&lib_path)?.finish();
+    let asm = compiler.load_file(&lib_path)?.assembly_mut();
+    let file_content = fs::read_to_string(&lib_path).unwrap();
+    asm.inputs.add_src(InputSrc::Str(0), file_content);
 
     let mut inputs = asm.inputs.clone();
     let files: Vec<_> = inputs.files.iter().map(|file| (file.key().clone(), file.value().clone())).collect();

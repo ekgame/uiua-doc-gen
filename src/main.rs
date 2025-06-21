@@ -10,6 +10,9 @@ use std::env;
 use std::fs;
 use std::path::PathBuf;
 use thiserror::Error;
+use uiua::Compiler;
+use uiua::NativeSys;
+use uiua::SysBackend;
 
 #[derive(Error, Debug)]
 enum AppError {
@@ -83,7 +86,11 @@ fn main() {
         }
     };
 
-    let extracted = match extract_uiua_definitions(&working_dir) {
+    let backend = NativeSys;
+    let _ = backend.change_directory(working_dir.as_path().to_str().unwrap());
+    let mut compiler = Compiler::with_backend(backend);
+
+    let extracted = match extract_uiua_definitions(&working_dir, &mut compiler) {
         Ok(extracted) => extracted,
         Err(err) => {
             eprintln!("Error: {}", err);
@@ -102,7 +109,7 @@ fn main() {
     };
 
     let summary = summarize_content(main_file, cli.name);
-    let result = generator::generate_documentation_site(&working_dir, summary);
+    let result = generator::generate_documentation_site(&working_dir, summary, &compiler);
     if let Err(err) = result {
         eprintln!("Error: {}", err);
         std::process::exit(1);
