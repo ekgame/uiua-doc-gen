@@ -161,7 +161,7 @@ Enum! ←^ ⍚($"_ ← $_ _\n".) :⇡⧻.⍚(⊂∩°□)°⊂
 
   ┌─╴SubModule
     # Docs for a sub-module function
-    ModuleFunction  ← ∘
+    ModuleFunction ← ∘
     # Some more docs
     ModuleFunction₂ ← ∘
   └─╴
@@ -207,3 +207,7 @@ F ← (
   ~Def [Foo X]
   Def 4 M~Incr
 )
+
+# Some information
+# ? String
+~OptionalArgs [A ← 1|B ← "hello"] $"_ _" B⟜(♭↯A)

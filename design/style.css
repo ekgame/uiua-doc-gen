@@ -202,6 +202,10 @@ code {
     .input {
         background-color: #ce9178;
     }
+
+    .optional {
+        background-color: #95d16a;
+    }
 }
 
 .data-summary {

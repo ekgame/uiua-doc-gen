@@ -1,3 +1,4 @@
+use crate::extractor::OptionalArg;
 use crate::formatter::format_source_code;
 use crate::{
     extractor::{
@@ -223,8 +224,7 @@ fn generate_content_item(parent_module: Option<String>, item: &ItemContent) -> O
         ItemContent::Module(module) => Some(generate_module_item(parent_module, module)),
         ItemContent::Data(data) => Some(generate_data_item(parent_module, data)),
         ItemContent::Variant(variant) => Some(generate_variant_item(parent_module, variant)),
-        ItemContent::Words { .. } => None,
-        _ => Some(view! { <div class="panel">{format!("{:?}", item)}</div> }),
+        ItemContent::Words { .. } | ItemContent::Import(_) => None,
     }
 }
 
@@ -273,12 +273,18 @@ fn generate_constant_item(parent_module: Option<String>, item: &BindingDefinitio
     }
 }
 
-fn generate_named_signature_item(signature: Option<SignatureInfo>, named_signature: Option<NamedSignature>) -> HtmlElement<Div> {
+fn generate_named_signature_item(
+    signature: Option<SignatureInfo>,
+    named_signature: Option<NamedSignature>,
+    optional_arguments: Option<Vec<OptionalArg>>,
+) -> HtmlElement<Div> {
     let hidden = if signature.is_none() && named_signature.is_none() {
         "hidden"
     } else {
         ""
     };
+
+    let optional_arguments = optional_arguments.unwrap_or_default();
 
     view! {
         <div class=format!(
@@ -305,6 +311,10 @@ fn generate_named_signature_item(signature: Option<SignatureInfo>, named_signatu
                             .iter()
                             .map(|input| view! { <span class="summary-badge input">{input}</span> })
                             .collect_view()}
+                        {optional_arguments
+                            .iter()
+                            .map(|arg| view! { <span class="summary-badge optional">{&arg.name}</span> })
+                            .collect_view()}
                     }
                 })}
         </div>
@@ -320,11 +330,16 @@ fn generate_function_item(parent_module: Option<String>, item: &BindingDefinitio
                 {parent_module.map(module_qualifier)}
                 <span class=function.signature.color_class()>{&item.name}</span> " "
                 <span class="badge">"function"</span>
+                {function
+                    .optional_args
+                    .as_ref()
+                    .map(|_| view! { " " <span class="badge">"optional arguments"</span> })}
             </h3>
 
             {generate_named_signature_item(
                 Some(function.signature.clone()),
                 function.named_signature.clone(),
+                function.optional_args.clone(),
             )}
             {documentation(item)}
 
@@ -347,7 +362,7 @@ fn generate_index_macro_item(parent_module: Option<String>, item: &BindingDefini
                 <span class="badge">"index macro"</span>
             </h3>
 
-            {generate_named_signature_item(None, index_macro.named_signature.clone())}
+            {generate_named_signature_item(None, index_macro.named_signature.clone(), None)}
             {documentation(item)}
 
             <details>
@@ -369,7 +384,7 @@ fn generate_code_macro_item(parent_module: Option<String>, item: &BindingDefinit
                 <span class="badge">"code macro"</span>
             </h3>
 
-            {generate_named_signature_item(None, index_macro.named_signature.clone())}
+            {generate_named_signature_item(None, index_macro.named_signature.clone(), None)}
             {documentation(item)}
 
             <details>
