@@ -1,4 +1,4 @@
-use crate::extractor::OptionalArg;
+use crate::extractor::{FunctionArgument, FunctionOutput};
 use crate::formatter::format_source_code;
 use crate::{
     extractor::{
@@ -8,6 +8,7 @@ use crate::{
     summarizer::{DocumentationSummary, RenderingContent, RenderingItem},
 };
 use kuchiki::traits::TendrilSink;
+use leptos::html::Span;
 use leptos::{html::Div, view, CollectView, HtmlElement, IntoView, View};
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
@@ -276,15 +277,12 @@ fn generate_constant_item(parent_module: Option<String>, item: &BindingDefinitio
 fn generate_named_signature_item(
     signature: Option<SignatureInfo>,
     named_signature: Option<NamedSignature>,
-    optional_arguments: Option<Vec<OptionalArg>>,
 ) -> HtmlElement<Div> {
     let hidden = if signature.is_none() && named_signature.is_none() {
         "hidden"
     } else {
         ""
     };
-
-    let optional_arguments = optional_arguments.unwrap_or_default();
 
     view! {
         <div class=format!(
@@ -311,13 +309,74 @@ fn generate_named_signature_item(
                             .iter()
                             .map(|input| view! { <span class="summary-badge input">{input}</span> })
                             .collect_view()}
-                        {optional_arguments
-                            .iter()
-                            .map(|arg| view! { <span class="summary-badge optional">{&arg.name}</span> })
-                            .collect_view()}
                     }
                 })}
         </div>
+    }
+}
+
+fn generate_function_signature_item(
+    signature: SignatureInfo,
+    inputs: Vec<FunctionArgument>,
+    outputs: Vec<FunctionOutput>,
+) -> HtmlElement<Div> {
+    view! {
+        <div class="function-summary">
+            <span class="summary-badge signature">{format!("{signature}")}</span>
+            {outputs
+                .iter()
+                .map(|output| generate_function_output_item(
+                    output.name.clone(),
+                    output.inferred,
+                ))
+                .collect_view()}
+            {Some("?").take_if(|_| signature.inputs > 0 || signature.outputs > 0)}
+            {inputs
+                .iter()
+                .map(|input| generate_function_input_item(
+                    input.name.clone(),
+                    input.inferred,
+                    input.optional,
+                    input.comment_name.clone(),
+                ))
+                .collect_view()}
+        </div>
+    }
+}
+
+fn generate_function_output_item(name: String, inferred: bool) -> HtmlElement<Span> {
+    let span_class = generate_class(vec![
+        ("summary-badge output", true),
+        ("inferred", inferred),
+    ]);
+    
+    view! {
+        <span class=span_class>
+            {name}
+        </span>
+    }
+}
+
+fn generate_function_input_item(name: String, inferred: bool, optional: bool, comment_name: Option<String>) -> HtmlElement<Span> {
+    let span_class = generate_class(vec![
+        ("summary-badge input", true),
+        ("inferred", inferred),
+        ("optional", optional),
+    ]);
+
+    let mut name = match optional || comment_name.is_some() {
+        true => format!("{}:", name),
+        false => name,
+    };
+
+    if let Some(comment_name) = comment_name {
+        name.push_str(&format!("{}", comment_name));
+    }
+    
+    view! {
+        <span class=span_class>
+            {name}
+        </span>
     }
 }
 
@@ -328,18 +387,15 @@ fn generate_function_item(parent_module: Option<String>, item: &BindingDefinitio
         <div class="panel feature">
             <h3 class="mono">
                 {parent_module.map(module_qualifier)}
-                <span class=function.signature.color_class()>{&item.name}</span> " "
+                <span class=function.signature().color_class()>{&item.name}</span> " "
                 <span class="badge">"function"</span>
-                {function
-                    .optional_args
-                    .as_ref()
-                    .map(|_| view! { " " <span class="badge">"optional arguments"</span> })}
+                {Some(view! { " " <span class="badge">"has optional arguments"</span> }).take_if(|_| function.optional_inputs.len() > 0)}
             </h3>
 
-            {generate_named_signature_item(
-                Some(function.signature.clone()),
-                function.named_signature.clone(),
-                function.optional_args.clone(),
+            {generate_function_signature_item(
+                function.signature().clone(),
+                function.inputs().clone(),
+                function.outputs.clone(),
             )}
             {documentation(item)}
 
@@ -362,7 +418,7 @@ fn generate_index_macro_item(parent_module: Option<String>, item: &BindingDefini
                 <span class="badge">"index macro"</span>
             </h3>
 
-            {generate_named_signature_item(None, index_macro.named_signature.clone(), None)}
+            {generate_named_signature_item(None, index_macro.named_signature.clone())}
             {documentation(item)}
 
             <details>
@@ -384,7 +440,7 @@ fn generate_code_macro_item(parent_module: Option<String>, item: &BindingDefinit
                 <span class="badge">"code macro"</span>
             </h3>
 
-            {generate_named_signature_item(None, index_macro.named_signature.clone(), None)}
+            {generate_named_signature_item(None, index_macro.named_signature.clone())}
             {documentation(item)}
 
             <details>
@@ -423,6 +479,14 @@ pub fn box_description(definition: Option<&Definition>) -> &'static str {
     } else {
         "no values"
     }
+}
+
+fn generate_class(values: Vec<(&str, bool)>) -> String {
+    values
+        .into_iter()
+        .filter_map(|(class, condition)| if condition { Some(class.to_string()) } else { None })
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 fn generate_data_item(parent_module: Option<String>, data: &DataDefinition) -> HtmlElement<Div> {

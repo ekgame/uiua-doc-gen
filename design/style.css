@@ -182,13 +182,13 @@ code {
 .function-summary {
     display: flex;
     flex-wrap: wrap;
-    gap: 1em;
+    gap: .5em;
     font-family: Uiua386, monospace;
 
     .summary-badge {
         color: black;
-        padding: 0 0.5em;
-        border-radius: 50px;
+        padding: 0 0.25em;
+        border-radius: 4px;
     }
 
     .signature {
@@ -205,6 +205,10 @@ code {
 
     .optional {
         background-color: #95d16a;
+    }
+
+    .inferred {
+        font-style: italic;
     }
 }
 
