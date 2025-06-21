@@ -371,7 +371,7 @@ fn summarize_functions(items: &[ItemContent], num_inputs: usize) -> Option<Vec<I
         .filter(|item| {
             if let ItemContent::Binding(binding) = item {
                 if let BindingType::Function(function) = &binding.kind {
-                    if function.signature.inputs == num_inputs {
+                    if function.signature().inputs == num_inputs {
                         return binding.public;
                     }
                 }

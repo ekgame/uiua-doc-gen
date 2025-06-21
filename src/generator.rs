@@ -1,3 +1,4 @@
+use crate::extractor::{FunctionArgument, FunctionOutput};
 use crate::formatter::format_source_code;
 use crate::{
     extractor::{
@@ -7,6 +8,7 @@ use crate::{
     summarizer::{DocumentationSummary, RenderingContent, RenderingItem},
 };
 use kuchiki::traits::TendrilSink;
+use leptos::html::Span;
 use leptos::{html::Div, view, CollectView, HtmlElement, IntoView, View};
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
@@ -14,11 +16,12 @@ use std::collections::HashMap;
 use std::fs::{create_dir_all, remove_dir_all};
 use std::path::{Path, PathBuf};
 use thiserror::Error;
+use uiua::Compiler;
 
 #[derive(Error, Debug)]
 pub enum GenerationError {}
 
-pub fn generate_documentation_site(directory: &Path, summary: DocumentationSummary) -> Result<(), GenerationError> {
+pub fn generate_documentation_site(directory: &Path, summary: DocumentationSummary, compiler: &Compiler) -> Result<(), GenerationError> {
     let output_directory = directory.join("doc-site");
     if output_directory.exists() {
         remove_dir_all(output_directory.clone()).expect("Unable to remove existing output directory");
@@ -44,7 +47,7 @@ pub fn generate_documentation_site(directory: &Path, summary: DocumentationSumma
     save_static_file(
         &output_directory,
         "index.html".parse().unwrap(),
-        generate_html(summary, &mut mangler).as_bytes(),
+        generate_html(summary, &mut mangler, &compiler).as_bytes(),
     );
 
     Ok(())
@@ -86,8 +89,8 @@ fn save_static_file(output_directory: &Path, file: PathBuf, content: &[u8]) {
     std::fs::write(destination, content).expect("Unable to write static file");
 }
 
-fn generate_html(summary: DocumentationSummary, mangler: &mut FilenameMangler) -> String {
-    let page_content = generate_page(summary, mangler);
+fn generate_html(summary: DocumentationSummary, mangler: &mut FilenameMangler, compiler: &Compiler) -> String {
+    let page_content = generate_page(summary, mangler, &compiler);
     let raw_output = leptos::ssr::render_to_string(|| page_content).to_string();
     let document = kuchiki::parse_html().from_utf8().one(raw_output.as_bytes());
 
@@ -112,7 +115,7 @@ fn markdown_to_html(markdown: &str) -> String {
     markdown::to_html_with_options(markdown, &markdown::Options::gfm()).expect("Unable to convert markdown to HTML")
 }
 
-fn generate_page(summary: DocumentationSummary, mangler: &mut FilenameMangler) -> impl IntoView {
+fn generate_page(summary: DocumentationSummary, mangler: &mut FilenameMangler, compiler: &Compiler) -> impl IntoView {
     let stylesheet = mangler.get_mangled_filename("style.css".as_ref()).unwrap().to_str().unwrap().to_string();
     let script = mangler.get_mangled_filename("script.js".as_ref()).unwrap().to_str().unwrap().to_string();
 
@@ -141,7 +144,7 @@ fn generate_page(summary: DocumentationSummary, mangler: &mut FilenameMangler) -
                         <div class="content">
                             <div class="content-wrapper">
                                 <h1 class="mobile-hidden">{&summary.title}</h1>
-                                {generate_content(&summary)}
+                                {generate_content(&summary, &compiler)}
                             </div>
                         </div>
                     </div>
@@ -197,43 +200,42 @@ fn generate_sidebar(summary: &DocumentationSummary) -> impl IntoView {
         .collect_view()
 }
 
-fn generate_content(summary: &DocumentationSummary) -> impl IntoView {
+fn generate_content(summary: &DocumentationSummary, compiler: &Compiler) -> impl IntoView {
     summary
         .sections
         .iter()
-        .map(|section| section.content.iter().map(|item| generate_rendering_item(item)).collect_view())
+        .map(|section| section.content.iter().map(|item| generate_rendering_item(item, &compiler)).collect_view())
         .collect_view()
 }
 
-fn generate_rendering_item(item: &RenderingItem) -> impl IntoView {
+fn generate_rendering_item(item: &RenderingItem, compiler: &Compiler) -> impl IntoView {
     match &item.content {
         RenderingContent::RenderedDocumentation(ref content) => view! { <div class="panel" inner_html=content></div> },
         RenderingContent::Items(ref item) => view! {
             <div>
                 <h2 id=&item.title.link_id>{&item.title.title}</h2>
-                {item.items.iter().map(|item| generate_content_item(None, item)).collect_view()}
+                {item.items.iter().map(|item| generate_content_item(None, item, &compiler)).collect_view()}
             </div>
         },
     }
 }
 
-fn generate_content_item(parent_module: Option<String>, item: &ItemContent) -> Option<HtmlElement<Div>> {
+fn generate_content_item(parent_module: Option<String>, item: &ItemContent, compiler: &Compiler) -> Option<HtmlElement<Div>> {
     match item {
-        ItemContent::Binding(binding) => Some(generate_binding_item(parent_module, binding)),
-        ItemContent::Module(module) => Some(generate_module_item(parent_module, module)),
+        ItemContent::Binding(binding) => Some(generate_binding_item(parent_module, binding, &compiler)),
+        ItemContent::Module(module) => Some(generate_module_item(parent_module, module, &compiler)),
         ItemContent::Data(data) => Some(generate_data_item(parent_module, data)),
         ItemContent::Variant(variant) => Some(generate_variant_item(parent_module, variant)),
-        ItemContent::Words { .. } => None,
-        _ => Some(view! { <div class="panel">{format!("{:?}", item)}</div> }),
+        ItemContent::Words { .. } | ItemContent::Import(_) => None,
     }
 }
 
-fn generate_binding_item(parent_module: Option<String>, item: &BindingDefinition) -> HtmlElement<Div> {
+fn generate_binding_item(parent_module: Option<String>, item: &BindingDefinition, compiler: &Compiler) -> HtmlElement<Div> {
     match &item.kind {
         BindingType::Const(constant) => generate_constant_item(parent_module, item, constant),
-        BindingType::Function(function) => generate_function_item(parent_module, item, function),
-        BindingType::IndexMacro(index_macro) => generate_index_macro_item(parent_module, item, index_macro),
-        BindingType::CodeMacro(code_macro) => generate_code_macro_item(parent_module, item, code_macro),
+        BindingType::Function(function) => generate_function_item(parent_module, item, function, compiler),
+        BindingType::IndexMacro(index_macro) => generate_index_macro_item(parent_module, item, index_macro, &compiler),
+        BindingType::CodeMacro(code_macro) => generate_code_macro_item(parent_module, item, code_macro, &compiler),
     }
 }
 
@@ -311,20 +313,81 @@ fn generate_named_signature_item(signature: Option<SignatureInfo>, named_signatu
     }
 }
 
-fn generate_function_item(parent_module: Option<String>, item: &BindingDefinition, function: &FunctionDefinition) -> HtmlElement<Div> {
-    let source_code = format_source_code(&item.code);
+fn generate_function_signature_item(signature: SignatureInfo, inputs: Vec<FunctionArgument>, outputs: Vec<FunctionOutput>) -> HtmlElement<Div> {
+    view! {
+        <div class="function-summary">
+            <span class="summary-badge signature">{format!("{signature}")}</span>
+            {outputs
+                .iter()
+                .map(|output| generate_function_output_item(
+                    output.name.clone(),
+                    output.inferred,
+                ))
+                .collect_view()}
+            {Some("?").take_if(|_| signature.inputs > 0 || signature.outputs > 0)}
+            {inputs
+                .iter()
+                .map(|input| generate_function_input_item(
+                    input.name.clone(),
+                    input.inferred,
+                    input.optional,
+                    input.comment_name.clone(),
+                ))
+                .collect_view()}
+        </div>
+    }
+}
+
+fn generate_function_output_item(name: String, inferred: bool) -> HtmlElement<Span> {
+    let span_class = generate_class(vec![("summary-badge output", true), ("inferred", inferred)]);
+
+    view! {
+        <span class=span_class>
+            {name}
+        </span>
+    }
+}
+
+fn generate_function_input_item(name: String, inferred: bool, optional: bool, comment_name: Option<String>) -> HtmlElement<Span> {
+    let span_class = generate_class(vec![("summary-badge input", true), ("inferred", inferred), ("optional", optional)]);
+
+    let mut name = match optional || comment_name.is_some() {
+        true => format!("{}:", name),
+        false => name,
+    };
+
+    if let Some(comment_name) = comment_name {
+        name.push_str(&format!("{}", comment_name));
+    }
+
+    view! {
+        <span class=span_class>
+            {name}
+        </span>
+    }
+}
+
+fn generate_function_item(
+    parent_module: Option<String>,
+    item: &BindingDefinition,
+    function: &FunctionDefinition,
+    compiler: &Compiler,
+) -> HtmlElement<Div> {
+    let source_code = format_source_code(&item.code, &compiler);
 
     view! {
         <div class="panel feature">
             <h3 class="mono">
                 {parent_module.map(module_qualifier)}
-                <span class=function.signature.color_class()>{&item.name}</span> " "
+                <span class=function.signature().color_class()>{&item.name}</span> " "
                 <span class="badge">"function"</span>
+                {Some(view! { " " <span class="badge">"has optional arguments"</span> }).take_if(|_| function.optional_inputs.len() > 0)}
             </h3>
 
-            {generate_named_signature_item(
-                Some(function.signature.clone()),
-                function.named_signature.clone(),
+            {generate_function_signature_item(
+                function.signature().clone(),
+                function.inputs().clone(),
+                function.outputs.clone(),
             )}
             {documentation(item)}
 
@@ -336,8 +399,13 @@ fn generate_function_item(parent_module: Option<String>, item: &BindingDefinitio
     }
 }
 
-fn generate_index_macro_item(parent_module: Option<String>, item: &BindingDefinition, index_macro: &IndexMacroDefinition) -> HtmlElement<Div> {
-    let source_code = format_source_code(&item.code);
+fn generate_index_macro_item(
+    parent_module: Option<String>,
+    item: &BindingDefinition,
+    index_macro: &IndexMacroDefinition,
+    compiler: &Compiler,
+) -> HtmlElement<Div> {
+    let source_code = format_source_code(&item.code, &compiler);
 
     view! {
         <div class="panel feature">
@@ -358,8 +426,13 @@ fn generate_index_macro_item(parent_module: Option<String>, item: &BindingDefini
     }
 }
 
-fn generate_code_macro_item(parent_module: Option<String>, item: &BindingDefinition, index_macro: &CodeMacroDefinition) -> HtmlElement<Div> {
-    let source_code = format_source_code(&item.code);
+fn generate_code_macro_item(
+    parent_module: Option<String>,
+    item: &BindingDefinition,
+    index_macro: &CodeMacroDefinition,
+    compiler: &Compiler,
+) -> HtmlElement<Div> {
+    let source_code = format_source_code(&item.code, &compiler);
 
     view! {
         <div class="panel feature">
@@ -380,7 +453,7 @@ fn generate_code_macro_item(parent_module: Option<String>, item: &BindingDefinit
     }
 }
 
-fn generate_module_item(parent_module: Option<String>, module: &ModuleDefinition) -> HtmlElement<Div> {
+fn generate_module_item(parent_module: Option<String>, module: &ModuleDefinition, compiler: &Compiler) -> HtmlElement<Div> {
     view! {
         <div class="panel feature">
             <h3 class="mono">
@@ -392,7 +465,7 @@ fn generate_module_item(parent_module: Option<String>, module: &ModuleDefinition
             {module
                 .items
                 .iter()
-                .map(|item| generate_content_item(Some(module.name.clone()), item))
+                .map(|item| generate_content_item(Some(module.name.clone()), item, &compiler))
                 .collect_view()}
         </div>
     }
@@ -408,6 +481,14 @@ pub fn box_description(definition: Option<&Definition>) -> &'static str {
     } else {
         "no values"
     }
+}
+
+fn generate_class(values: Vec<(&str, bool)>) -> String {
+    values
+        .into_iter()
+        .filter_map(|(class, condition)| if condition { Some(class.to_string()) } else { None })
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 fn generate_data_item(parent_module: Option<String>, data: &DataDefinition) -> HtmlElement<Div> {

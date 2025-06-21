@@ -1,9 +1,12 @@
 use leptos::view;
 use leptos::*;
-use uiua::{NativeSys, PrimClass, Primitive, Signature, SpanKind, Spans, Subscript};
+use uiua::{
+    lsp::{BindingDocs, BindingDocsKind},
+    Compiler, NativeSys, PrimClass, Primitive, Signature, SpanKind, Spans, Subscript,
+};
 use unicode_segmentation::UnicodeSegmentation;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum CodeFragment {
     Unspanned(String),
     Br,
@@ -69,10 +72,22 @@ fn prim_sig_class(prim: Primitive, subscript: Option<Subscript>) -> &'static str
     }
 }
 
-fn build_code_lines(code: &str) -> CodeLines {
+fn binding_class(docs: &BindingDocs) -> &'static str {
+    match docs.kind {
+        BindingDocsKind::Constant(_) => "constant",
+        BindingDocsKind::Function { sig, .. } => sig_class(sig),
+        BindingDocsKind::Modifier(margs) => modifier_class(margs),
+        BindingDocsKind::Module { .. } => "module",
+        BindingDocsKind::Error => "output-error",
+    }
+}
+
+fn build_code_lines(code: &str, compiler: &Compiler) -> CodeLines {
     let mut lines = CodeLines { frags: vec![Vec::new()] };
 
-    let chars: Vec<&str> = code.graphemes(true).collect();
+    let lib_file_src = &compiler.assembly().inputs.strings[0];
+    let code_with_context = format!("{}\n\n{}", lib_file_src, &code);
+    let chars: Vec<&str> = code_with_context.graphemes(true).collect();
 
     let push_unspanned = |lines: &mut CodeLines, mut target: usize, curr: &mut usize| {
         target = target.min(chars.len());
@@ -106,7 +121,8 @@ fn build_code_lines(code: &str) -> CodeLines {
     };
 
     let mut end = 0;
-    let spans = Spans::with_backend(code, NativeSys::default());
+
+    let spans = Spans::with_backend(&code_with_context, NativeSys::default());
     for span in spans.spans {
         let kind = span.value;
         let span = span.span;
@@ -137,11 +153,17 @@ fn build_code_lines(code: &str) -> CodeLines {
         line.retain(|frag| !matches!(frag, CodeFragment::Unspanned(s) if s.is_empty()));
     }
 
+    // count the lines in "code" and keep last N lines
+    let code_lines_count = code.lines().count();
+    if lines.frags.len() > code_lines_count {
+        lines.frags = lines.frags[lines.frags.len() - code_lines_count..].to_vec();
+    }
+
     lines
 }
 
-pub fn format_source_code(code: &str) -> String {
-    let CodeLines { frags } = build_code_lines(code);
+pub fn format_source_code(code: &str, compiler: &Compiler) -> String {
+    let CodeLines { frags } = build_code_lines(code, &compiler);
     let mut line_views = Vec::new();
     for line in frags {
         if line.is_empty() {
@@ -159,17 +181,19 @@ pub fn format_source_code(code: &str) -> String {
                 CodeFragment::Unspanned(s) => frag_views.push(view! { <span class="code-span">{s}</span> }.into_view()),
                 CodeFragment::Br => frag_views.push(view! { <br /> }.into_view()),
                 CodeFragment::Span(text, kind) => {
-                    let color_class = match &kind {
-                        SpanKind::Primitive(prim, sig) => prim_sig_class(*prim, *sig),
-                        SpanKind::Obverse(_) => prim_sig_class(Primitive::Obverse, None),
-                        SpanKind::Number => "number-literal",
-                        SpanKind::String | SpanKind::ImportSrc(_) => "string-literal-span",
-                        SpanKind::Comment | SpanKind::OutputComment => "comment-span",
-                        SpanKind::Strand => "strand-span",
-                        SpanKind::Subscript(None, _) => "number-literal",
-                        SpanKind::Subscript(Some(prim), n) => prim_sig_class(*prim, *n),
-                        SpanKind::MacroDelim(margs) => modifier_class(*margs),
-                        _ => "",
+                    let color_class: String = match &kind {
+                        SpanKind::Primitive(prim, sig) => prim_sig_class(*prim, *sig).to_string(),
+                        SpanKind::Obverse(_) => prim_sig_class(Primitive::Obverse, None).to_string(),
+                        SpanKind::Number => "number-literal".to_string(),
+                        SpanKind::String | SpanKind::ImportSrc(_) => "string-literal-span".to_string(),
+                        SpanKind::Comment | SpanKind::OutputComment => "comment-span".to_string(),
+                        SpanKind::Strand => "strand-span".to_string(),
+                        SpanKind::Subscript(None, _) => "number-literal".to_string(),
+                        SpanKind::Subscript(Some(prim), n) => prim_sig_class(*prim, *n).to_string(),
+                        SpanKind::MacroDelim(margs) => modifier_class(*margs).to_string(),
+                        SpanKind::ArgSetter(_) => sig_class((1, 0).into()).to_string(),
+                        SpanKind::Ident { docs: Some(docs), .. } => binding_class(&docs).to_string(),
+                        _ => format!("span-{:?}", kind),
                     };
                     let text = view! { <span class=format!("code-span {}", color_class)>{text}</span> };
                     frag_views.push(text.into_view());

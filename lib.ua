@@ -161,7 +161,7 @@ Enum! ←^ ⍚($"_ ← $_ _\n".) :⇡⧻.⍚(⊂∩°□)°⊂
 
   ┌─╴SubModule
     # Docs for a sub-module function
-    ModuleFunction  ← ∘
+    ModuleFunction ← ∘
     # Some more docs
     ModuleFunction₂ ← ∘
   └─╴
@@ -207,3 +207,48 @@ F ← (
   ~Def [Foo X]
   Def 4 M~Incr
 )
+
+# All optional, undocumented signature
+# 
+# Expected documentation: Output = A: B:
+~OptionalArgs₁ {A ← 0|B ← 0} ∘
+
+# All optional, but function has a required argument, undocumented signature
+# 
+# Expected documentation: Output = Input A: B:
+~OptionalArgs₂ {A ← 0|B ← 0} {⊙∘}
+
+# Required and optional, undocumented signature
+# 
+# Expected documentation: Output = A B:
+~OptionalArgs₃ {A B ← 0} ∘
+
+# Two required and optional, one required not in data def, undocumented signature
+# 
+# Expected documentation: Output = A B:
+~OptionalArgs₄ {A B ← 0} {⊙∘}
+
+# All optional, documented signature
+# 
+# Expected documentation: output = A: B:
+# output ? Something SomethingElse
+~OptionalArgs₅ {A ← 0|B ← 0} ∘
+
+# All optional, but function has a required argument, partially documented
+# 
+# Expected documentation: Output = Something A: B:
+# ? Something
+~OptionalArgs₆ {A ← 0|B ← 0} {⊙∘}
+
+# Required and optional, wrongly documented signature
+# 
+# Expected documentation: OutOne = A:InOne B:
+# 
+# OutOne OutTwo OutThree ? InOne InTwo InThree
+~OptionalArgs₇ {A B ← 0} ∘
+
+# Two required and optional, one required not in data def, not all output documented
+# 
+# Expected documentation: Defined Output2 Output3 = A:InOne InTwo B:
+# Defined ? InOne InTwo
+~OptionalArgs₈ {A B ← 0} ..{⊙∘}
