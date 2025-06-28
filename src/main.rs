@@ -108,7 +108,7 @@ fn main() {
         }
     };
 
-    let summary = summarize_content(main_file, cli.name);
+    let summary = summarize_content(main_file, cli.name, &compiler);
     let result = generator::generate_documentation_site(&working_dir, summary, &compiler);
     if let Err(err) = result {
         eprintln!("Error: {}", err);

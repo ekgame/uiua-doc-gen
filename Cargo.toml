@@ -15,7 +15,7 @@ thiserror = "2.0.3"
 same-file = "1.0.6"
 leptos = { version = "0.6.15", features = ["serde", "csr"] }
 kuchiki = "0.8.1"
-markdown = "1.0.0-alpha.21"
+pulldown-cmark = "0.13.0"
 html5ever = "0.29.0"
 markup5ever = "0.10.1"
 rand = "0.8.5"

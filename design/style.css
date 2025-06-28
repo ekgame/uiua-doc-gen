@@ -370,7 +370,7 @@ summary {
     color: var(--color-summary);
 }
 
-.source-code {
+.source-code, .language-uiua {
     display: flex;
     flex-direction: column;
 }

@@ -1,8 +1,10 @@
 use crate::extractor::{BindingDefinition, BindingType, FileContent, ItemContent, ModuleDefinition};
+use crate::generator::markdown_to_html;
 use kuchiki::traits::TendrilSink;
 use kuchiki::NodeRef;
 use markup5ever::namespace_url;
 use markup5ever::{local_name, ns, QualName};
+use uiua::Compiler;
 use std::option::Option;
 
 #[derive(Debug, Clone)]
@@ -56,10 +58,10 @@ pub struct DocumentationSummary {
     pub sections: Vec<DocumentationSection>,
 }
 
-pub fn summarize_content(content: &FileContent, title: String) -> DocumentationSummary {
+pub fn summarize_content(content: &FileContent, title: String, compiler: &Compiler) -> DocumentationSummary {
     let mut sections = Vec::new();
 
-    if let Some(documentation) = summarize_doc_comments(content) {
+    if let Some(documentation) = summarize_doc_comments(content, &compiler) {
         sections.push(documentation);
     }
 
@@ -103,14 +105,14 @@ pub fn summarize_content(content: &FileContent, title: String) -> DocumentationS
     }
 }
 
-fn summarize_doc_comments(content: &FileContent) -> Option<DocumentationSection> {
+fn summarize_doc_comments(content: &FileContent, compiler: &Compiler) -> Option<DocumentationSection> {
     let doc_comments = extract_doc_comments(&content.items);
     if doc_comments.is_empty() {
         return None;
     }
 
     let mut items = Vec::new();
-    items.extend(doc_comments.iter().map(|comment| summarize_doc_comment(comment)));
+    items.extend(doc_comments.iter().map(|comment| summarize_doc_comment(comment, &compiler)));
 
     if items.is_empty() {
         return None;
@@ -123,11 +125,10 @@ fn summarize_doc_comments(content: &FileContent) -> Option<DocumentationSection>
     })
 }
 
-fn summarize_doc_comment(comment: &str) -> RenderingItem {
+fn summarize_doc_comment(comment: &str, compiler: &Compiler) -> RenderingItem {
     let mut links = Vec::new();
 
-    let html = markdown::to_html_with_options(comment, &markdown::Options::gfm()).expect("Unable to convert markdown to HTML");
-
+    let html = markdown_to_html(comment, &compiler);
     let document = kuchiki::parse_html().from_utf8().one(html.as_bytes());
     document
         .select("h1, h2, h3, h4, h5, h6")

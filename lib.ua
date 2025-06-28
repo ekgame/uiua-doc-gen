@@ -98,6 +98,12 @@ GenerateRandom ← (⚂)
 Identity ← ∘
 
 # Make the first character uppercase.
+#
+# Usage:
+# ```uiua
+# Capitalize "foobar"
+# ```
+#
 # result ? input
 Capitalize ← ⍣(⍜⊢⌵|∘)
 

@@ -17,6 +17,8 @@ use std::fs::{create_dir_all, remove_dir_all};
 use std::path::{Path, PathBuf};
 use thiserror::Error;
 use uiua::Compiler;
+use pulldown_cmark::{html, CodeBlockKind, Event, Options, Parser, Tag, TagEnd};
+
 
 #[derive(Error, Debug)]
 pub enum GenerationError {}
@@ -111,8 +113,28 @@ fn generate_html(summary: DocumentationSummary, mangler: &mut FilenameMangler, c
     String::from_utf8(result).unwrap()
 }
 
-fn markdown_to_html(markdown: &str) -> String {
-    markdown::to_html_with_options(markdown, &markdown::Options::gfm()).expect("Unable to convert markdown to HTML")
+pub fn markdown_to_html(markdown: &str, compiler: &Compiler) -> String {
+    let parser = Parser::new_ext(markdown, Options::all());
+    let mut in_uiua_code_block = false;
+    let mut html_output = String::new();
+
+    let parser = parser.map(|event| match &event {
+        Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(lang))) if lang.to_lowercase() == "uiua" => {
+            in_uiua_code_block = true;
+            event
+        }
+        Event::End(TagEnd::CodeBlock) if in_uiua_code_block => {
+            in_uiua_code_block = false;
+            event
+        }
+        Event::Text(text) if in_uiua_code_block => {
+            Event::Html(format_source_code(&text.trim().to_string(), &compiler).into())
+        }
+        _ => event,
+    });
+
+    html::push_html(&mut html_output, parser);
+    html_output
 }
 
 fn generate_page(summary: DocumentationSummary, mangler: &mut FilenameMangler, compiler: &Compiler) -> impl IntoView {
@@ -224,15 +246,15 @@ fn generate_content_item(parent_module: Option<String>, item: &ItemContent, comp
     match item {
         ItemContent::Binding(binding) => Some(generate_binding_item(parent_module, binding, &compiler)),
         ItemContent::Module(module) => Some(generate_module_item(parent_module, module, &compiler)),
-        ItemContent::Data(data) => Some(generate_data_item(parent_module, data)),
-        ItemContent::Variant(variant) => Some(generate_variant_item(parent_module, variant)),
+        ItemContent::Data(data) => Some(generate_data_item(parent_module, data, &compiler)),
+        ItemContent::Variant(variant) => Some(generate_variant_item(parent_module, variant, &compiler)),
         ItemContent::Words { .. } | ItemContent::Import(_) => None,
     }
 }
 
 fn generate_binding_item(parent_module: Option<String>, item: &BindingDefinition, compiler: &Compiler) -> HtmlElement<Div> {
     match &item.kind {
-        BindingType::Const(constant) => generate_constant_item(parent_module, item, constant),
+        BindingType::Const(constant) => generate_constant_item(parent_module, item, constant, &compiler),
         BindingType::Function(function) => generate_function_item(parent_module, item, function, compiler),
         BindingType::IndexMacro(index_macro) => generate_index_macro_item(parent_module, item, index_macro, &compiler),
         BindingType::CodeMacro(code_macro) => generate_code_macro_item(parent_module, item, code_macro, &compiler),
@@ -247,12 +269,12 @@ fn module_qualifier(module: String) -> View {
     .into()
 }
 
-fn documentation(item: &impl Documented) -> impl IntoView {
+fn documentation(item: &impl Documented, compiler: &Compiler) -> impl IntoView {
     item.comment()
-        .map(|comment| view! { <div class="feature-documentation" inner_html=markdown_to_html(comment) /> })
+        .map(|comment| view! { <div class="feature-documentation" inner_html=markdown_to_html(comment, compiler) /> })
 }
 
-fn generate_constant_item(parent_module: Option<String>, item: &BindingDefinition, constant: &ConstantDefinition) -> HtmlElement<Div> {
+fn generate_constant_item(parent_module: Option<String>, item: &BindingDefinition, constant: &ConstantDefinition, compiler: &Compiler) -> HtmlElement<Div> {
     view! {
         <div class="panel feature">
             <h3 class="mono">
@@ -270,7 +292,7 @@ fn generate_constant_item(parent_module: Option<String>, item: &BindingDefinitio
                         </details>
                     }
                 })}
-            {documentation(item)}
+            {documentation(item, &compiler)}
         </div>
     }
 }
@@ -389,7 +411,7 @@ fn generate_function_item(
                 function.inputs().clone(),
                 function.outputs.clone(),
             )}
-            {documentation(item)}
+            {documentation(item, &compiler)}
 
             <details>
                 <summary>"Source code"</summary>
@@ -416,7 +438,7 @@ fn generate_index_macro_item(
             </h3>
 
             {generate_named_signature_item(None, index_macro.named_signature.clone())}
-            {documentation(item)}
+            {documentation(item, &compiler)}
 
             <details>
                 <summary>"Source code"</summary>
@@ -443,7 +465,7 @@ fn generate_code_macro_item(
             </h3>
 
             {generate_named_signature_item(None, index_macro.named_signature.clone())}
-            {documentation(item)}
+            {documentation(item, &compiler)}
 
             <details>
                 <summary>"Source code"</summary>
@@ -460,7 +482,7 @@ fn generate_module_item(parent_module: Option<String>, module: &ModuleDefinition
                 {parent_module.map(module_qualifier)} <span class="module">{&module.name}</span> " "
                 <span class="badge">"module"</span>
             </h3>
-            {documentation(module)}
+            {documentation(module, &compiler)}
             <br />
             {module
                 .items
@@ -491,7 +513,7 @@ fn generate_class(values: Vec<(&str, bool)>) -> String {
         .join(" ")
 }
 
-fn generate_data_item(parent_module: Option<String>, data: &DataDefinition) -> HtmlElement<Div> {
+fn generate_data_item(parent_module: Option<String>, data: &DataDefinition, compiler: &Compiler) -> HtmlElement<Div> {
     fn badge_row(field: &Field) -> View {
         view! {
             <div class="badge-row">
@@ -526,7 +548,7 @@ fn generate_data_item(parent_module: Option<String>, data: &DataDefinition) -> H
                 <span class="badge">"data"</span> " "
                 <span class="badge">{box_description(data.definition.as_ref())}</span>
             </h3>
-            {documentation(data)}
+            {documentation(data, &compiler)}
             {data
                 .definition
                 .as_ref()
@@ -541,7 +563,7 @@ fn generate_data_item(parent_module: Option<String>, data: &DataDefinition) -> H
     }
 }
 
-fn generate_variant_item(parent_module: Option<String>, data: &VariantDefinition) -> HtmlElement<Div> {
+fn generate_variant_item(parent_module: Option<String>, data: &VariantDefinition, compiler: &Compiler) -> HtmlElement<Div> {
     view! {
         <div class="panel feature">
             <h3 class="mono">
@@ -549,7 +571,7 @@ fn generate_variant_item(parent_module: Option<String>, data: &VariantDefinition
                 <span class="badge">"variant"</span> " "
                 <span class="badge">{box_description(data.definition.as_ref())}</span>
             </h3>
-            {documentation(data)}
+            {documentation(data, &compiler)}
             {data
                 .definition
                 .as_ref()
