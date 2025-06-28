@@ -129,6 +129,7 @@ F‼ ← ^0^1
 F‼! ← ^0^1^2
 
 # Test macro 5
+# Result ? MacroInput AnotherMacroInput
 Enum! ←^ ⍚($"_ ← $_ _\n".) :⇡⧻.⍚(⊂∩°□)°⊂
 
 ┌─╴TestModule

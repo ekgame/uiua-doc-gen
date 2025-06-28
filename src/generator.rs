@@ -297,22 +297,13 @@ fn generate_constant_item(parent_module: Option<String>, item: &BindingDefinitio
     }
 }
 
-fn generate_named_signature_item(signature: Option<SignatureInfo>, named_signature: Option<NamedSignature>) -> HtmlElement<Div> {
-    let hidden = if signature.is_none() && named_signature.is_none() {
-        "hidden"
-    } else {
-        ""
-    };
+fn generate_named_signature_item(named_signature: Option<NamedSignature>) -> Option<HtmlElement<Div>> {
+    if named_signature.is_none() {
+        return None;
+    }
 
-    view! {
-        <div class=format!(
-            "function-summary {}",
-            hidden,
-        )>
-            {signature
-                .map(|signature| {
-                    view! { <span class="summary-badge signature">{format!("{signature}")}</span> }
-                })}
+    Some(view! {
+        <div class="function-summary">
             {named_signature
                 .map(|signature| {
                     view! {
@@ -323,7 +314,7 @@ fn generate_named_signature_item(signature: Option<SignatureInfo>, named_signatu
                                 view! { <span class="summary-badge output">{output}</span> }
                             })
                             .collect_view()}
-                        "?"
+                        <span class="signature-separator">"?"</span>
                         {signature
                             .inputs
                             .iter()
@@ -332,7 +323,7 @@ fn generate_named_signature_item(signature: Option<SignatureInfo>, named_signatu
                     }
                 })}
         </div>
-    }
+    })
 }
 
 fn generate_function_signature_item(signature: SignatureInfo, inputs: Vec<FunctionArgument>, outputs: Vec<FunctionOutput>) -> HtmlElement<Div> {
@@ -346,7 +337,7 @@ fn generate_function_signature_item(signature: SignatureInfo, inputs: Vec<Functi
                     output.inferred,
                 ))
                 .collect_view()}
-            {Some("?").take_if(|_| signature.inputs > 0 || signature.outputs > 0)}
+            {Some(view! { <span class="signature-separator">"?"</span> }).take_if(|_| signature.inputs > 0 || signature.outputs > 0)}
             {inputs
                 .iter()
                 .map(|input| generate_function_input_item(
@@ -437,7 +428,7 @@ fn generate_index_macro_item(
                 <span class="badge">"index macro"</span>
             </h3>
 
-            {generate_named_signature_item(None, index_macro.named_signature.clone())}
+            {generate_named_signature_item(index_macro.named_signature.clone())}
             {documentation(item, &compiler)}
 
             <details>
@@ -464,7 +455,7 @@ fn generate_code_macro_item(
                 <span class="badge">"code macro"</span>
             </h3>
 
-            {generate_named_signature_item(None, index_macro.named_signature.clone())}
+            {generate_named_signature_item(index_macro.named_signature.clone())}
             {documentation(item, &compiler)}
 
             <details>

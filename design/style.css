@@ -135,6 +135,8 @@ a {
     flex-direction: column;
     gap: 0.5em;
     border-left: 3px solid var(--binding-color);
+    border-top-left-radius: 3px;
+    border-bottom-left-radius: 3px;
 
     & > * {
         margin-top: 0;
@@ -470,4 +472,10 @@ summary {
 
 .output-error {
     color: #f44;
+}
+
+.signature-separator {
+    scale: 1.2;
+    font-weight: bold;
+    padding: 0 0.25em;
 }
