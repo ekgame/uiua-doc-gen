@@ -231,13 +231,13 @@ code {
     }
 
     .badge-row > .data-badge:first-child {
-        border-top-left-radius: 50px;
-        border-bottom-left-radius: 50px;
+        border-top-left-radius: 0.3em;
+        border-bottom-left-radius: 0.3em;
     }
 
     .badge-row > .data-badge:last-child {
-        border-top-right-radius: 50px;
-        border-bottom-right-radius: 50px;
+        border-top-right-radius: 0.3em;
+        border-bottom-right-radius: 0.3em;
     }
 
     .type {
@@ -261,7 +261,7 @@ code {
     .data-badge {
         color: black;
         padding: 0 0.5em;
-        border-radius: 50px;
+        border-radius: 0.3em;
     }
 
     .input {
