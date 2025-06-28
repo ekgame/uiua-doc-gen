@@ -29,6 +29,8 @@
 
 * {
     box-sizing: border-box;
+    scroll-behavior: smooth !important;
+    scroll-margin-top: 1em;
 }
 
 html, body {
@@ -375,6 +377,7 @@ table td code {
 
 summary {
     color: var(--color-summary);
+    cursor: pointer;
 }
 
 .source-code, .language-uiua {
