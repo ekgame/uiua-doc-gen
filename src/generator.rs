@@ -263,7 +263,7 @@ fn generate_binding_item(parent_module: Option<String>, item: &BindingDefinition
 
 fn module_qualifier(module: String) -> View {
     view! {
-        <span class="module">{module}</span>
+        <span class="binding module">{module}</span>
         <span>"~"</span>
     }
     .into()
@@ -276,9 +276,9 @@ fn documentation(item: &impl Documented, compiler: &Compiler) -> impl IntoView {
 
 fn generate_constant_item(parent_module: Option<String>, item: &BindingDefinition, constant: &ConstantDefinition, compiler: &Compiler) -> HtmlElement<Div> {
     view! {
-        <div class="panel feature">
+        <div class="panel feature constant">
             <h3 class="mono">
-                {parent_module.clone().map(module_qualifier)} <span inner_html=&item.name></span>
+                {parent_module.clone().map(module_qualifier)} <span class="binding" inner_html=&item.name></span>
                 " " <span class="badge">"constant"</span>
             </h3>
             {constant
@@ -398,10 +398,10 @@ fn generate_function_item(
     let source_code = format_source_code(&item.code, &compiler);
 
     view! {
-        <div class="panel feature">
+        <div class=format!("panel feature {}", function.signature().color_class())>
             <h3 class="mono">
                 {parent_module.map(module_qualifier)}
-                <span class=function.signature().color_class()>{&item.name}</span> " "
+                <span class="binding">{&item.name}</span> " "
                 <span class="badge">"function"</span>
                 {Some(view! { " " <span class="badge">"has optional arguments"</span> }).take_if(|_| function.optional_inputs.len() > 0)}
             </h3>
@@ -430,10 +430,10 @@ fn generate_index_macro_item(
     let source_code = format_source_code(&item.code, &compiler);
 
     view! {
-        <div class="panel feature">
+        <div class=format!("panel feature {}", index_macro.color_class())>
             <h3 class="mono">
                 {parent_module.map(module_qualifier)}
-                <span class=index_macro.color_class()>{&item.name}</span> " "
+                <span class="binding">{&item.name}</span> " "
                 <span class="badge">"index macro"</span>
             </h3>
 
@@ -457,10 +457,10 @@ fn generate_code_macro_item(
     let source_code = format_source_code(&item.code, &compiler);
 
     view! {
-        <div class="panel feature">
+        <div class="panel feature monadic-modifier">
             <h3 class="mono">
                 {parent_module.map(module_qualifier)}
-                <span class="monadic-modifier">{&item.name}</span> " "
+                <span class="binding">{&item.name}</span> " "
                 <span class="badge">"code macro"</span>
             </h3>
 
@@ -477,9 +477,9 @@ fn generate_code_macro_item(
 
 fn generate_module_item(parent_module: Option<String>, module: &ModuleDefinition, compiler: &Compiler) -> HtmlElement<Div> {
     view! {
-        <div class="panel feature">
+        <div class="panel feature module">
             <h3 class="mono">
-                {parent_module.map(module_qualifier)} <span class="module">{&module.name}</span> " "
+                {parent_module.map(module_qualifier)} <span class="binding">{&module.name}</span> " "
                 <span class="badge">"module"</span>
             </h3>
             {documentation(module, &compiler)}
@@ -541,10 +541,10 @@ fn generate_data_item(parent_module: Option<String>, data: &DataDefinition, comp
     }
 
     view! {
-        <div class="panel feature">
+        <div class="panel feature module">
             <h3 class="mono">
                 {parent_module.map(module_qualifier)}
-                <span class="module">{data.name.clone().unwrap_or_default()}</span> " "
+                <span class="binding">{data.name.clone().unwrap_or_default()}</span> " "
                 <span class="badge">"data"</span> " "
                 <span class="badge">{box_description(data.definition.as_ref())}</span>
             </h3>
@@ -565,9 +565,9 @@ fn generate_data_item(parent_module: Option<String>, data: &DataDefinition, comp
 
 fn generate_variant_item(parent_module: Option<String>, data: &VariantDefinition, compiler: &Compiler) -> HtmlElement<Div> {
     view! {
-        <div class="panel feature">
+        <div class="panel feature module">
             <h3 class="mono">
-                {parent_module.map(module_qualifier)} <span class="module">{&data.name}</span> " "
+                {parent_module.map(module_qualifier)} <span class="binding">{&data.name}</span> " "
                 <span class="badge">"variant"</span> " "
                 <span class="badge">{box_description(data.definition.as_ref())}</span>
             </h3>

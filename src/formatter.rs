@@ -40,20 +40,20 @@ impl CodeLines {
 
 fn modifier_class(margs: usize) -> &'static str {
     match margs {
-        0 | 1 => "monadic-modifier",
-        2 => "dyadic-modifier",
-        _ => "triadic-modifier",
+        0 | 1 => "binding monadic-modifier",
+        2 => "binding dyadic-modifier",
+        _ => "binding triadic-modifier",
     }
 }
 
 fn sig_class(sig: Signature) -> &'static str {
     match sig.args() {
-        0 => "noadic-function",
-        1 => "monadic-function",
-        2 => "dyadic-function",
-        3 => "triadic-function",
-        4 => "tetradic-function",
-        _ => "",
+        0 => "binding noadic-function",
+        1 => "binding monadic-function",
+        2 => "binding dyadic-function",
+        3 => "binding triadic-function",
+        4 => "binding tetradic-function",
+        _ => "binding",
     }
 }
 
@@ -74,10 +74,10 @@ fn prim_sig_class(prim: Primitive, subscript: Option<Subscript>) -> &'static str
 
 fn binding_class(docs: &BindingDocs) -> &'static str {
     match docs.kind {
-        BindingDocsKind::Constant(_) => "constant",
+        BindingDocsKind::Constant(_) => "binding constant",
         BindingDocsKind::Function { sig, .. } => sig_class(sig),
         BindingDocsKind::Modifier(margs) => modifier_class(margs),
-        BindingDocsKind::Module { .. } => "module",
+        BindingDocsKind::Module { .. } => "binding module",
         BindingDocsKind::Error => "output-error",
     }
 }
@@ -193,7 +193,7 @@ pub fn format_source_code(code: &str, compiler: &Compiler) -> String {
                         SpanKind::MacroDelim(margs) => modifier_class(*margs).to_string(),
                         SpanKind::ArgSetter(_) => sig_class((1, 0).into()).to_string(),
                         SpanKind::Ident { docs: Some(docs), .. } => binding_class(&docs).to_string(),
-                        _ => format!("span-{:?}", kind),
+                        _ => "".to_string(),
                     };
                     let text = view! { <span class=format!("code-span {}", color_class)>{text}</span> };
                     frag_views.push(text.into_view());
