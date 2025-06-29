@@ -111,7 +111,7 @@ a {
 
 .panel .panel {
     border: 1px solid var(--color-separator);
-    border-left: inherit;;
+    border-left: inherit;
 }
 
 .section-name {
@@ -134,7 +134,7 @@ a {
     display: flex;
     flex-direction: column;
     gap: 0.5em;
-    border-left: 3px solid var(--binding-color);
+    border-left: 3px solid var(--binding-color) !important;
     border-top-left-radius: 3px;
     border-bottom-left-radius: 3px;
 
