@@ -1,6 +1,6 @@
 [package]
 name = "uiua-doc-gen"
-version = "0.18.0-dev.1-docs.1"
+version = "0.18.0+dev.1-docs.1"
 edition = "2021"
 description = "Documentation generator for Uiua libraries"
 license = "MIT"
