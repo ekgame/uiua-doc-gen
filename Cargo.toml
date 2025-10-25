@@ -1,6 +1,6 @@
 [package]
 name = "uiua-doc-gen"
-version = "1.0.3+uiua-0.18.0-dev.1"
+version = "1.0.4+uiua-0.18.0-dev.1"
 edition = "2021"
 description = "Documentation generator for Uiua libraries"
 license = "MIT"
@@ -20,6 +20,9 @@ html5ever = "0.29.0"
 markup5ever = "0.10.1"
 rand = "0.8.5"
 unicode-segmentation = "1.12.0"
+
+[package.metadata.release]
+tag-name = "v{{version}}+{{metadata}}"
 
 [profile.dev]
 opt-level = 1
