@@ -1,6 +1,6 @@
 [package]
 name = "uiua-doc-gen"
-version = "0.17.4" # Major/minor version matches supported version of Uiua, patch is for the generator itself
+version = "0.18.0-dev.1-docs.1"
 edition = "2021"
 description = "Documentation generator for Uiua libraries"
 license = "MIT"
@@ -9,7 +9,7 @@ readme = "README.md"
 keywords = ["cli", "documentation", "generator", "uiua"]
 
 [dependencies]
-uiua = "0.17.2"
+uiua = "0.18.0-dev.1"
 clap = "4.5.20"
 thiserror = "2.0.3"
 same-file = "1.0.6"

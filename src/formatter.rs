@@ -60,7 +60,7 @@ fn sig_class(sig: Signature) -> &'static str {
 fn prim_sig_class(prim: Primitive, subscript: Option<Subscript>) -> &'static str {
     match prim {
         Primitive::Identity => "stack-function",
-        prim if matches!(prim.class(), PrimClass::Stack | PrimClass::Debug) && prim.modifier_args().is_none() => "stack-function",
+        prim if matches!(prim.class(), PrimClass::Arguments | PrimClass::Debug) && prim.modifier_args().is_none() => "stack-function",
         prim if prim.class() == PrimClass::Constant => "number-literal",
         prim => {
             if let Some(m) = prim.modifier_args() {

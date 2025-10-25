@@ -259,3 +259,9 @@ F ← (
 # Expected documentation: Defined Output2 Output3 = A:InOne InTwo B:
 # Defined ? InOne InTwo
 ~OptionalArgs₈ {A B ← 0} ..{⊙∘}
+
+# Reach
+H! ← ^⊙◌
+
+# Flip
+F ← ˜∘
