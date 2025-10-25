@@ -1,6 +1,6 @@
 [package]
 name = "uiua-doc-gen"
-version = "1.0.2+uiua-0.18.0-dev.1"
+version = "1.0.3+uiua-0.18.0-dev.1"
 edition = "2021"
 description = "Documentation generator for Uiua libraries"
 license = "MIT"
@@ -28,4 +28,3 @@ opt-level = 1
 [profile.dist]
 inherits = "release"
 lto = "thin"
-allow-dirty = true
