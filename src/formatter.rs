@@ -66,7 +66,7 @@ fn prim_sig_class(prim: Primitive, subscript: Option<Subscript>) -> &'static str
             if let Some(m) = prim.modifier_args() {
                 modifier_class(m)
             } else {
-                prim.subscript_sig(subscript).or(prim.sig()).map(sig_class).unwrap_or("")
+                prim.subscript_sig(subscript.as_ref()).or(prim.sig()).map(sig_class).unwrap_or("")
             }
         }
     }
@@ -182,14 +182,14 @@ pub fn format_source_code(code: &str, compiler: &Compiler) -> String {
                 CodeFragment::Br => frag_views.push(view! { <br /> }.into_view()),
                 CodeFragment::Span(text, kind) => {
                     let color_class: String = match &kind {
-                        SpanKind::Primitive(prim, sig) => prim_sig_class(*prim, *sig).to_string(),
+                        SpanKind::Primitive(prim, sig) => prim_sig_class(*prim, sig.clone()).to_string(),
                         SpanKind::Obverse(_) => prim_sig_class(Primitive::Obverse, None).to_string(),
                         SpanKind::Number => "number-literal".to_string(),
                         SpanKind::String | SpanKind::ImportSrc(_) => "string-literal-span".to_string(),
                         SpanKind::Comment | SpanKind::OutputComment => "comment-span".to_string(),
                         SpanKind::Strand => "strand-span".to_string(),
                         SpanKind::Subscript(None, _) => "number-literal".to_string(),
-                        SpanKind::Subscript(Some(prim), n) => prim_sig_class(*prim, *n).to_string(),
+                        SpanKind::Subscript(Some(prim), n) => prim_sig_class(*prim, n.clone()).to_string(),
                         SpanKind::MacroDelim(margs) => modifier_class(*margs).to_string(),
                         SpanKind::ArgSetter(_) => sig_class((1, 0).into()).to_string(),
                         SpanKind::Ident { docs: Some(docs), .. } => binding_class(&docs).to_string(),
