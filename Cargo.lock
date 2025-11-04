@@ -3977,9 +3977,9 @@ checksum = "2896d95c02a80c6d6a5d6e953d479f5ddf2dfdb6a244441010e373ac0fb88971"
 
 [[package]]
 name = "uiua"
-version = "0.18.0-dev.1"
+version = "0.18.0-dev.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "322c790eefebdbe3389623886ee6b29f8f96814d21baf02aad910fd5ef3858ac"
+checksum = "f1a8016b01f5b12b8e72a82080c692e19a799752598dc91462d459d66a4acc1a"
 dependencies = [
  "arboard",
  "bitflags 2.6.0",
@@ -3996,6 +3996,7 @@ dependencies = [
  "dashmap 6.1.0",
  "ecow",
  "enum-iterator",
+ "flate2",
  "gif",
  "hound",
  "icy_sixel",
@@ -4042,7 +4043,7 @@ dependencies = [
 
 [[package]]
 name = "uiua-doc-gen"
-version = "1.0.4+uiua-0.18.0-dev.1"
+version = "1.0.5+uiua-0.18.0-dev.2"
 dependencies = [
  "clap",
  "html5ever 0.29.0",
@@ -4059,9 +4060,9 @@ dependencies = [
 
 [[package]]
 name = "uiua_parser"
-version = "0.18.0-dev.1"
+version = "0.18.0-dev.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "99d080b00a161fa4e48c398dcf2eca86874d073f7aecdd58143d9721d71236fd"
+checksum = "5cfb63ab0abaecefd87f0bba5cb236c00355439cecd09a04961d9c1c7b411197"
 dependencies = [
  "bytemuck",
  "colored",
