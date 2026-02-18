@@ -453,7 +453,7 @@ fn handle_ast_items(items: Vec<Item>, asm: &Assembly) -> Vec<ItemContent> {
                     BindingKind::CodeMacro(_) => BindingType::CodeMacro(CodeMacroDefinition {
                         named_signature: signature.map(Into::into),
                     }),
-                    BindingKind::Module(_) | BindingKind::Import(_) | BindingKind::Scope(_) | BindingKind::Error => continue,
+                    BindingKind::Module(_) | BindingKind::Scope(_) | BindingKind::Error => continue,
                 };
 
                 results.push(ItemContent::Binding(BindingDefinition {
@@ -527,7 +527,8 @@ fn data_def_to_item(data_def: &DataDef, asm: &Assembly) -> ItemContent {
             panic!("Data function without module binding");
         };
 
-        let BindingKind::Func(function) = &asm.bindings[module.names["Call"].index].kind else {
+        let call_binding = module.names.get_only_function("Call", &asm).expect("Data function module without Call binding");
+        let BindingKind::Func(function) = &asm.bindings[call_binding.index].kind else {
             panic!("Data function without Call binding");
         };
 
